@@ -1,0 +1,21 @@
+# Aktivacija privatnog studija
+
+Javni web ostaje na GitHub Pagesu. Supabase dodaje prijavu, bazu radova i spremište datoteka. Dok `data/portfolio-config.json` nije povezan, javni web čita postojeće radove iz `data/portfolio.json`, a `/studio/` jasno prikazuje da prijava još nije aktivirana.
+
+1. Otvori Supabase projekt. U Authentication → Users izradi vlastiti korisnički račun s e-mailom i lozinkom. Isključi javnu registraciju u Authentication postavkama. Lozinku nemoj slati u chat niti spremati u repozitorij.
+2. U SQL Editor zalijepi sadržaj `setup.sql`. Zamijeni `OWNER_EMAIL_HERE` svojim e-mailom i pokreni skriptu. Skripta u jednoj transakciji postavlja vlasnika, prava pristupa, početne radove i bucket `portfolio-media`.
+3. U `data/portfolio-config.json` upiši Project URL (npr. `https://PROJECT.supabase.co`) i **javni publishable ključ** `sb_publishable_…`. Podržan je i stariji javni `anon` ključ. **Secret i service_role ključevi ne smiju se koristiti na webu.** Javni ključ nije lozinka; prava provjeravaju pravila baze i Storagea.
+4. Objavi konfiguraciju i otvori `/studio/`. Prijavi se vlastitim računom. Dodavanje, preslagivanje, uređivanje i uklanjanje radova automatski se spremaju nakon kratke stanke u uređivanju. Gumb „Spremi odmah” sprema bez čekanja.
+
+Nove fotografije pripremaju se za web do 2400 px u WebP formatu. GIF zadržava izvorni oblik. MP4 i WebM prenose se bez promjene; ograničenje je 40 MB po datoteci. Videozapisu možeš dodati naslovnu fotografiju opcijom „Zamijeni datoteku”. Brisanjem rada uklanjaš ga s weba; izvorne datoteke ostaju u vlastitom Supabase spremištu dok ih ondje ne ukloniš.
+
+## Pristup i sinkronizacija
+
+- Studio nije povezan u navigaciji i ima `noindex`. Njegov statični HTML može se otvoriti preko adrese: tajnost adrese nije zaštita. Uređivanje se otvara tek nakon provjere prijave i vlasničkih ovlasti na poslužitelju.
+- Samo UID korisnika iz privatne tablice vlasnika smije mijenjati radove ili datoteke. Pravila ne koriste korisnički promjenjive profile ni JavaScript provjeru lozinke. Anoniman posjetitelj smije čitati objavljene radove i javne fotografije.
+- Lozinka i tokeni ne spremaju se u izvorni kod, localStorage ni sessionStorage. Sesija postoji samo u otvorenoj kartici; ponovno učitavanje traži novu prijavu. JWT se obnavlja tijekom rada. Supabase provjerava lozinku i ograničava pokušaje prijave.
+- Spremanje ažurira jedan popis radova s brojem revizije. Dvije otvorene administracije ne mogu tiho prebrisati izmjene jedna drugoj: novija verzija zaustavlja zastarjelo spremanje.
+- Naslovna i galerija koriste isti popis. Nova objava dostupna je odmah, kartice javnog weba provjeravaju promjene svakih pet sekundi dok su vidljive, a drugi prozori istog preglednika dobivaju obavijest odmah. GitHub objava nije potrebna pri dodavanju radova.
+- Posljednja uspješno učitana javna verzija može se spremiti u pregledniku radi oporavka pri prekidu veze. U taj se cache ne spremaju lozinke ni tokeni.
+
+Prije puštanja provjeri i na stvarnom projektu: anoniman PATCH i upload moraju vratiti zabranu, drugi prijavljeni korisnik mora imati zabranu, a vlasnik mora moći dodati rad i vidjeti ga u drugom pregledniku. Lokalni testovi s oponašanjem API-ja ne zamjenjuju ovu provjeru stvarno primijenjenih pravila.

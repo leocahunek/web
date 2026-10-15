@@ -9,6 +9,8 @@ Raspakiraj cijeli ZIP i otvori `index.html` u pregledniku. Zadrži sve HTML dato
 - `o-meni.html` — biografija i mjesto za portret.
 - `kontakt.html` — usluge i obrazac za pripremu upita.
 - `assets/style.css`, `assets/main.js` — zajednički izgled i interakcije.
+- `data/portfolio.json`, `assets/portfolio-store.js` — zajednički podaci radova i povezivanje objavljenog sadržaja.
+- `studio/` — admin sučelje, bez poveznice u javnoj navigaciji; aktivacija prijave i sinkronizacije opisana je u `supabase/README.md`.
 - `assets/camera-cursor*.svg` — pokazivači u obliku fotoaparata, bez vanjskih ovisnosti.
 
 Za razvoj s lokalnim serverom pokreni `python3 -m http.server 8000 --bind 0.0.0.0` iz direktorija projekta.
@@ -32,6 +34,7 @@ Nastavi uređivati priloženi web portfolio za Lea Cahuneka. Sačuvaj tamni eleg
 - About: opis Lea i mjesto za portret.
 - Contact: usluge i obrazac koji priprema TXT upit za preuzimanje.
 - Prilagodbe za desktop, tablet i mobitel te smanjeno kretanje prema postavkama uređaja.
+- Pripremljen admin `/studio/`: povlačenje datoteka, uređivanje metapodataka, redoslijeda i odabira naslovne, automatsko spremanje te povezivanje sa Supabase Authom, bazom i Storageom. **Prijava i online spremanje nisu aktivni dok se ne postave Supabase projekt i pravila iz `supabase/setup.sql`.**
 
 ## Preostalo prije javnog korištenja
 - Zamijeniti ogledne Unsplash fotografije, privremeni pejzaž na mjestu portreta i demo video stvarnim radovima.
@@ -51,6 +54,8 @@ https://lc-visual-studio-leon.round-lemur-7636.chatgpt.site
 Ovaj link nije povezan s lokalnim izmjenama. Za pregled nove verzije raspakiraj cijeli ZIP i otvori `index.html`; pri objavi prenesi sve četiri HTML datoteke i mapu `assets`.
 
 ## Provjera nove verzije
+
+Admin i sinkronizacija provjereni su u Chromiumu s izoliranim API mockom: zabrana drugom računu, upload i priprema fotografije, prijenos promjena u otvorenu galeriju, zaštita prikaza od HTML umetanja, preslagivanje, brisanje, sukobi revizija, odjava te prazno stanje i jedan rad. Stvarna Supabase pravila treba primijeniti i provjeriti na povezanom projektu prije aktivacije prijave. Bez konfiguracije studio ostaje neaktivan, a javni web prikazuje postojeće radove.
 
 Provjereno u Chromiumu preko lokalnog HTTP servera: uvod i preskakanje uvoda, galerija, tipkovnica, lightbox, filtri, mobilni izbornik, swipe, pauziranje i nastavak listanja, promjena postavke smanjenog kretanja i sadržaj preuzetog TXT upita. Sve stranice provjerene su na širinama 320, 390, 768 i 1440 px bez vodoravnog pomicanja i JavaScript pogrešaka. Vanjske fotografije i video još su ograničeni mrežnom politikom cloud okruženja; grafički omoti ostaju dostupni.
 

@@ -4,18 +4,13 @@
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   let reducedMotion = motion.matches;
-  const projects = [
-    { name: 'Između svjetla i sjene', sub: 'Portretna fotografija', cat: 'photo', art: 'portrait', img: 'photo-1534528741775-53994a69daeb', short: 'Portraits', year: '01' },
-    { name: 'Grad u pokretu', sub: 'Video / ogledni film', cat: 'video', art: 'city', img: 'photo-1519608487953-e999c86e7455', short: 'After hours', year: '02' },
-    { name: 'Forma & karakter', sub: 'Vizualni identitet / koncept', cat: 'design', art: 'design', img: 'photo-1634942536790-2539db948f1f', short: 'Objects', year: '03' },
-    { name: 'Tišina prostora', sub: 'Arhitektura i interijer', cat: 'photo', art: 'space', img: 'photo-1600210492486-724fe5c67fb0', short: 'Spaces', year: '04' },
-    { name: 'Negdje usput', sub: 'Travel fotografija', cat: 'photo', art: 'travel', img: 'photo-1464822759023-fed622ff2c3b', short: 'Elsewhere', year: '05' },
-    { name: 'Mali rituali', sub: 'Produkt i lifestyle fotografija', cat: 'photo', art: 'ritual', img: 'photo-1442512595331-e89e73853f31', short: 'Rituals', year: '06' }
-  ];
+  let projects = [];
+  const portfolio = window.LeoPortfolio;
+  const esc = portfolio.escapeHTML;
   const categories = { photo: 'Fotografija', video: 'Film & montaža', design: 'Grafički dizajn' };
-  const imageURL = (p, width = 1000) => `https://images.unsplash.com/${p.img}?w=${width}&auto=format&fit=crop&q=85`;
+  const imageURL = portfolio.imageURL;
   const artHTML = p => `<div class="media-art art-${p.art}" aria-hidden="true"><span class="art-grid"></span><span class="art-index">${p.year}</span></div>`;
-  const imageHTML = (p, lazy = true) => `<img class="media-image" src="${imageURL(p)}" alt="${p.sub}" ${lazy ? 'loading="lazy"' : 'fetchpriority="high"'}>`;
+  const imageHTML = (p, lazy = true) => p.image ? `<img class="media-image" src="${esc(imageURL(p))}" alt="${esc(p.sub)}" ${lazy ? 'loading="lazy"' : 'fetchpriority="high"'}>` : '';
   function watchImages(root = document) {
     $$('.media-image', root).forEach(img => {
       const loaded = () => { if (img.naturalWidth > 0) img.classList.add('is-loaded'); };
@@ -27,16 +22,37 @@
   let introRunning = !!$('.shutter');
   let restartAutoplay = () => {};
   let syncPauseButton = () => {};
+  let disposeDeck = () => {};
+  let savedDeck = { paused:false, selectedId:null, focused:false };
   const gallery = $('.gallery');
-  if ($('.covers')) {
+  function mountDeck() {
     const covers = $('.covers');
-    const featured = projects.slice(0, 5);
+    if (!covers) return;
+    covers.replaceChildren();
+    const featured = projects.filter(p => p.featured).slice(0,5);
     const total = featured.length;
+    restartAutoplay = () => {};
+    syncPauseButton = () => {};
+    $('#prev').disabled = $('#next').disabled = total < 2;
+    $('#pause').hidden = total < 2;
+    covers.setAttribute('aria-busy','false');
+    if (!total) {
+      const empty = document.createElement('p');
+      empty.className = 'portfolio-empty';
+      empty.textContent = 'Novi radovi uskoro.';
+      covers.append(empty);
+      $('#counter').textContent = '00 / 00';
+      $('.hero-footnote').textContent = 'ODABRANI RADOVI';
+      disposeDeck = () => {};
+      return;
+    }
+    const events = new AbortController();
+    const on = (target,type,handler,options = {}) => target.addEventListener(type,handler,{...options,signal:events.signal});
     const fullTurn = Math.PI * 2;
     const unitsPerMs = total / 30000;
-    let position = 0;
+    let position = Math.max(0,featured.findIndex(p => p.id === savedDeck.selectedId));
     let selected = -1;
-    let userPaused = false;
+    let userPaused = savedDeck.paused;
     let focusPaused = false;
     let offscreen = false;
     let frame = null;
@@ -51,10 +67,10 @@
       button.type = 'button';
       button.className = 'cover';
       button.setAttribute('aria-label', `Prikaži ${p.name}, rad ${i + 1} od ${total}`);
-      button.innerHTML = `${artHTML(p)}${imageHTML(p, i !== 0)}<span class="cover-topline" aria-hidden="true"><span>LEO / SELECTED WORK</span><span>${p.year} / 05</span></span><span class="cover-label" aria-hidden="true"><span><small>${categories[p.cat]}</small><strong>${p.short}</strong></span><span class="cover-open"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></span>`;
-      button.addEventListener('click', () => {
+      button.innerHTML = `${artHTML(p)}${imageHTML(p, i !== 0)}<span class="cover-topline" aria-hidden="true"><span>LEO / SELECTED WORK</span><span>${String(i + 1).padStart(2,'0')} / ${String(total).padStart(2,'0')}</span></span><span class="cover-label" aria-hidden="true"><span><small>${categories[p.cat]}</small><strong>${esc(p.short)}</strong></span><span class="cover-open"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></span>`;
+      on(button,'click', () => {
         if (performance.now() - lastSwipe < 400) return;
-        if (selected === i) openProject(i);
+        if (selected === i) openProject(projects.indexOf(p));
         else {
           const distance = ((i - position + total * 1.5) % total + total) % total - total / 2;
           moveTo(position + distance);
@@ -77,7 +93,7 @@
     function renderOrbit(announce = false) {
       // The front half travels right/up to left/down; the return passes behind it.
       cards.forEach((card, i) => {
-        const angle = (position - i) * fullTurn / total + Math.PI / 2;
+        const angle = total === 1 ? Math.PI / 2 : (position - i) * fullTurn / total + Math.PI / 2;
         const depth = (Math.sin(angle) + 1) / 2;
         const x = Math.cos(angle) * geometry.radiusX;
         const y = -Math.cos(angle) * geometry.radiusY + Math.sin(angle) * geometry.depthY;
@@ -102,7 +118,7 @@
       if (announce) $('#carousel-status').textContent = `${featured[selected].name}. Rad ${selected + 1} od ${total}.`;
     }
     function mayRun() {
-      return !reducedMotion && !userPaused && !focusPaused && !offscreen && !introRunning && !document.hidden && !$('#lightbox').open;
+      return total > 1 && !reducedMotion && !userPaused && !focusPaused && !offscreen && !introRunning && !document.hidden && !$('#lightbox').open;
     }
     function tick(now) {
       frame = null;
@@ -152,27 +168,27 @@
       restartAutoplay();
     }
     function stepDeck(direction) { moveTo(Math.round(manualMove?.to ?? position) + direction); }
-    $('#prev').addEventListener('click', () => stepDeck(-1));
-    $('#next').addEventListener('click', () => stepDeck(1));
+    on($('#prev'),'click', () => stepDeck(-1));
+    on($('#next'),'click', () => stepDeck(1));
     const pause = $('#pause');
     syncPauseButton = function () {
-      pause.hidden = reducedMotion;
+      pause.hidden = reducedMotion || total < 2;
       pause.setAttribute('aria-pressed', String(userPaused));
       pause.setAttribute('aria-label', userPaused ? 'Pokreni kruženje radova' : 'Pauziraj kruženje radova');
       pause.title = pause.getAttribute('aria-label');
       pause.firstElementChild.innerHTML = userPaused ? '<svg class="ui-icon play-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m8 5 11 7-11 7Z"/></svg>' : '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5v14M15 5v14"/></svg>';
     };
-    pause.addEventListener('click', () => {
+    on(pause,'click', () => {
       userPaused = !userPaused;
       if (userPaused) manualMove = null;
       syncPauseButton();
       restartAutoplay();
     });
-    covers.addEventListener('focusin', () => { focusPaused = true; restartAutoplay(); });
-    covers.addEventListener('focusout', e => {
+    on(covers,'focusin', () => { focusPaused = true; restartAutoplay(); });
+    on(covers,'focusout', e => {
       if (!covers.contains(e.relatedTarget)) { focusPaused = false; restartAutoplay(); }
     });
-    covers.addEventListener('keydown', e => {
+    on(covers,'keydown', e => {
       if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
       e.preventDefault();
       const target = Math.round(manualMove?.to ?? position) + (e.key === 'ArrowLeft' ? -1 : 1);
@@ -180,10 +196,10 @@
       cards[((target % total) + total) % total].focus({ preventScroll: true });
     });
     let pointerStart;
-    covers.addEventListener('pointerdown', e => {
+    on(covers,'pointerdown', e => {
       if (e.pointerType !== 'mouse') pointerStart = { x: e.clientX, y: e.clientY, id: e.pointerId };
     });
-    covers.addEventListener('pointerup', e => {
+    on(covers,'pointerup', e => {
       if (!pointerStart || pointerStart.id !== e.pointerId) return;
       const dx = e.clientX - pointerStart.x;
       const dy = e.clientY - pointerStart.y;
@@ -193,7 +209,7 @@
         stepDeck(dx < 0 ? 1 : -1);
       }
     });
-    covers.addEventListener('pointercancel', () => { pointerStart = null; });
+    on(covers,'pointercancel', () => { pointerStart = null; });
     // Wheel and vertical touch gestures add speed, then coast back to the base orbit.
     const hero = covers.closest('.hero');
     function boostOrbit(delta) {
@@ -201,16 +217,16 @@
       scrollBoost = Math.min(7, scrollBoost + Math.min(240, Math.abs(delta)) * .018);
       restartAutoplay();
     }
-    hero.addEventListener('wheel', e => {
+    on(hero,'wheel', e => {
       if (e.ctrlKey) return;
       const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? hero.clientHeight : 1;
       boostOrbit(e.deltaY * unit);
     }, { passive: true });
     let scrollTouch = null;
-    hero.addEventListener('pointerdown', e => {
+    on(hero,'pointerdown', e => {
       if (e.pointerType === 'touch' && e.isPrimary) scrollTouch = { id: e.pointerId, x: e.clientX, y: e.clientY, previousY: e.clientY };
     });
-    hero.addEventListener('pointermove', e => {
+    on(hero,'pointermove', e => {
       if (!scrollTouch || scrollTouch.id !== e.pointerId) return;
       const dx = e.clientX - scrollTouch.x;
       const dy = e.clientY - scrollTouch.y;
@@ -220,30 +236,58 @@
       }
       scrollTouch.previousY = e.clientY;
     });
-    hero.addEventListener('pointerup', () => { scrollTouch = null; });
-    hero.addEventListener('pointercancel', () => { scrollTouch = null; });
-    document.addEventListener('visibilitychange', restartAutoplay);
-    if ('ResizeObserver' in window) new ResizeObserver(measureOrbit).observe(covers);
-    else addEventListener('resize', measureOrbit);
-    if ('IntersectionObserver' in window) new IntersectionObserver(entries => {
+    on(hero,'pointerup', () => { scrollTouch = null; });
+    on(hero,'pointercancel', () => { scrollTouch = null; });
+    on(document,'visibilitychange', restartAutoplay);
+    const resizeObserver = 'ResizeObserver' in window ? new ResizeObserver(measureOrbit) : null;
+    if (resizeObserver) resizeObserver.observe(covers);
+    else on(window,'resize', measureOrbit);
+    const orbitObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
       offscreen = !entries[0].isIntersecting;
       restartAutoplay();
-    }, { threshold: .01 }).observe(covers);
+    }, { threshold: .01 }) : null;
+    orbitObserver?.observe(covers);
+    disposeDeck = () => {
+      savedDeck = { paused:userPaused, selectedId:featured[selected]?.id, focused:covers.contains(document.activeElement) };
+      events.abort();
+      if (frame !== null) cancelAnimationFrame(frame);
+      resizeObserver?.disconnect();
+      orbitObserver?.disconnect();
+    };
     measureOrbit();
     syncPauseButton();
+    $('.hero-footnote').textContent = `ODABRANI RADOVI / 01 — ${String(total).padStart(2,'0')}`;
+    watchImages(covers);
+    if (savedDeck.focused) cards[selected].focus({preventScroll:true});
+    restartAutoplay();
   }
 
-  if (gallery) {
+  function mountGallery() {
+  if (!gallery) return;
+  gallery.replaceChildren();
+  const activeFilter = $('.filter.active').dataset.filter;
   projects.forEach((p, i) => {
     const figure = document.createElement('figure');
     figure.className = 'project';
     figure.dataset.category = p.cat;
     figure.dataset.reveal = '';
     figure.style.setProperty('--reveal-delay', `${(i % 2) * 100}ms`);
-    figure.innerHTML = `<button type="button" class="project-media" aria-label="Otvori ${p.name}">${artHTML(p)}${imageHTML(p)}<span class="project-tag" aria-hidden="true">${categories[p.cat]}</span>${p.cat === 'video' ? '<span class="play" aria-hidden="true"><span><svg class="ui-icon play-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m8 5 11 7-11 7Z"/></svg></span></span>' : ''}<span class="project-open" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></button><figcaption><div><h3>${p.name}</h3><p>${p.sub}</p></div><span class="project-number" aria-hidden="true">/${p.year}</span></figcaption>`;
+    figure.innerHTML = `<button type="button" class="project-media" aria-label="Otvori ${esc(p.name)}">${artHTML(p)}${imageHTML(p)}<span class="project-tag" aria-hidden="true">${categories[p.cat]}</span>${p.video ? '<span class="play" aria-hidden="true"><span><svg class="ui-icon play-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m8 5 11 7-11 7Z"/></svg></span></span>' : ''}<span class="project-open" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></button><figcaption><div><h3>${esc(p.name)}</h3><p>${esc(p.sub)}</p></div><span class="project-number" aria-hidden="true">/${p.year}</span></figcaption>`;
+    figure.hidden = activeFilter !== 'all' && activeFilter !== p.cat;
     $('.project-media', figure).addEventListener('click', () => openProject(i));
     gallery.append(figure);
   });
+  $('.project-count').textContent = `${String($$('.project:not([hidden])').length).padStart(2,'0')} / RADOVA`;
+  $('.demo-note').hidden = !projects.some(p => p.id.startsWith('demo-'));
+  if (!projects.length) {
+    const empty = document.createElement('p');
+    empty.className = 'portfolio-empty';
+    empty.textContent = 'Novi radovi uskoro.';
+    gallery.append(empty);
+  }
+  watchImages(gallery);
+  }
+
   $$('.filter').forEach(button => button.addEventListener('click', () => {
     if (button.classList.contains('active')) return;
     $$('.filter').forEach(other => {
@@ -263,25 +307,23 @@
     $('.project-count').textContent = `${String(count).padStart(2, '0')} / RADOVA`;
   }));
 
-  }
-
   const dialog = $('#lightbox');
   let openIndex = 0;
   function renderLightbox() {
     const p = projects[openIndex];
     $('.dialog-category').textContent = `${p.year} / ${categories[p.cat]}`;
     $('#lightbox-title').textContent = p.name;
-    $('#lightbox-description').textContent = p.cat === 'video' ? 'Ogledni video za demonstraciju reprodukcije.' : 'Ogledni vizual za prikaz dizajna portfolija.';
+    $('#lightbox-description').textContent = p.description || p.sub;
     const content = $('#lightbox-content');
-    content.innerHTML = p.cat === 'video'
-      ? '<div class="dialog-media"><video controls autoplay playsinline aria-label="Ogledni video, cvijet na vjetru" src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"></video></div><p class="video-status" role="status"></p>'
-      : `<div class="dialog-media">${artHTML(p)}<img class="media-image" src="${imageURL(p, 1600)}" alt="${p.sub}"></div>`;
+    content.innerHTML = p.video
+      ? `<div class="dialog-media"><video controls autoplay playsinline aria-label="${esc(p.name)}" src="${esc(p.video)}" ${p.image ? `poster="${esc(imageURL(p,1600))}"` : ''}></video></div><p class="video-status" role="status"></p>`
+      : `<div class="dialog-media">${artHTML(p)}<img class="media-image" src="${esc(imageURL(p,1600))}" alt="${esc(p.sub)}"></div>`;
     watchImages(content);
     const video = $('video', content);
-    if (video) video.addEventListener('error', () => { $('.video-status', content).textContent = 'Ogledni video trenutačno nije dostupan. Možeš nastaviti pregledavati ostale radove.'; }, { once: true });
+    if (video) video.addEventListener('error', () => { $('.video-status', content).textContent = 'Video trenutačno nije dostupan. Možeš nastaviti pregledavati ostale radove.'; }, { once: true });
   }
   function openProject(index) {
-    if (!dialog) return;
+    if (!dialog || !projects[index]) return;
     openIndex = index;
     renderLightbox();
     dialog.showModal();
@@ -416,4 +458,27 @@
     syncPauseButton();
     restartAutoplay();
   });
+
+  function applyProjects(next) {
+    const openId = projects[openIndex]?.id;
+    disposeDeck();
+    projects = next;
+    mountDeck();
+    mountGallery();
+    if (dialog?.open) {
+      openIndex = projects.findIndex(p => p.id === openId);
+      if (openIndex < 0) dialog.close();
+      else renderLightbox();
+    }
+  }
+  if ($('.covers') || gallery) {
+    portfolio.load().then(doc => {
+      applyProjects(doc.projects);
+      portfolio.subscribe(next => applyProjects(next.projects));
+    }).catch(() => {
+      applyProjects([]);
+      const empty = $('.portfolio-empty');
+      if (empty) empty.textContent = 'Radove trenutačno nije moguće učitati. Pokušaj osvježiti stranicu.';
+    });
+  }
 })();
