@@ -21,7 +21,7 @@ Nastavi uređivati priloženi web portfolio za Lea Cahuneka. Sačuvaj tamni eleg
 - Naslovna s neprekidnim kruženjem omota po dijagonali: prednji niz ide od gornjeg desnog prema donjem lijevom kutu, a povratak prolazi iza njega.
 - Strelice, swipe i pauziranje ostaju dostupni; uz postavku smanjenog kretanja omoti miruju.
 - Dorađena tipografija, zaglavlje, grafički omoti i raspored za računalo, tablet i mobitel.
-- Bordo paleta `#240208`, bijeli tekst i slojevita pozadina s finim zrnom, tonalnim svjetlom i tankim konturnim linijama.
+- Tamnoljubičasta paleta `#210030`, bijeli tekst i slojevita pozadina s finim zrnom, tonalnim svjetlom i tankim konturnim linijama.
 - Fina, statična zrnata tekstura u pozadini i fotoaparat kao pokazivač na uređajima s mišem; na poljima za unos ostaje tekstni pokazivač.
 - Četiri zasebne HTML stranice, aktivna stavka navigacije i blagi prijelazi između stranica u preglednicima koji ih podržavaju.
 - Pauziranje automatskog listanja, tipkovnička navigacija i zaustavljanje listanja tijekom interakcije.
