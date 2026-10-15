@@ -21,6 +21,7 @@ Nastavi uređivati priloženi web portfolio za Lea Cahuneka. Sačuvaj tamni eleg
 - Naslovna s neprekidnim kruženjem omota po dijagonali: prednji niz ide od gornjeg desnog prema donjem lijevom kutu, a povratak prolazi iza njega.
 - Strelice, swipe i pauziranje ostaju dostupni; uz postavku smanjenog kretanja omoti miruju.
 - Dorađena tipografija, zaglavlje, grafički omoti i raspored za računalo, tablet i mobitel.
+- Bordo paleta `#3b030a`, bijeli tekst i slojevita pozadina s finim zrnom, tonalnim svjetlom i tankim konturnim linijama.
 - Fina, statična zrnata tekstura u pozadini i fotoaparat kao pokazivač na uređajima s mišem; na poljima za unos ostaje tekstni pokazivač.
 - Četiri zasebne HTML stranice, aktivna stavka navigacije i blagi prijelazi između stranica u preglednicima koji ih podržavaju.
 - Pauziranje automatskog listanja, tipkovnička navigacija i zaustavljanje listanja tijekom interakcije.
@@ -35,7 +36,13 @@ Nastavi uređivati priloženi web portfolio za Lea Cahuneka. Sačuvaj tamni eleg
 - Zamijeniti ogledne Unsplash fotografije, privremeni pejzaž na mjestu portreta i demo video stvarnim radovima.
 - Povezati kontaktni obrazac sa slanjem upita. Trenutno ništa ne šalje.
 - Dodatno provjeriti web u Safariju, Firefoxu i na stvarnim uređajima.
-- Fontovi, fotografije i demo video učitavaju se s vanjskih izvora i zahtijevaju internet. Bez njih ostaju dostupni rezervni fontovi, grafički omoti i ostale interakcije.
+- Fotografije i demo video učitavaju se s vanjskih izvora i zahtijevaju internet. Font Marcellus, tekstura, konture i ikone uključeni su lokalno.
+
+## Tipografija
+
+Arpona je prva u CSS izboru fontova. Datoteke Arpone ili Adobe Fonts web-projekt još nisu dostavljeni, pa se Arpona koristi samo ako je lokalno instalirana. U ostalim slučajevima prikazuje se priloženi Marcellus kao privremena zamjena, uključujući hrvatske znakove. Za stvarnu Arponu na svim uređajima poveži odgovarajući Adobe Fonts CSS ili dodaj licencirane datoteke i `@font-face` pravila u `assets/theme.css`.
+
+Marcellus je preuzet s Google Fonts i uključen uz SIL Open Font License u `assets/fonts/LICENSE-Marcellus.txt`.
 
 ## Ranija objavljena stranica
 https://lc-visual-studio-leon.round-lemur-7636.chatgpt.site
