@@ -81,7 +81,12 @@ body:not([data-page=home]) .site-header {
     transparent calc(75% - 1px), #ffffff28 75%, transparent calc(75% + 1px));
 }
 .availability { border-color: rgb(255 255 255 / .25); background: #09050d40; }
-.availability .dot { background: #fff; box-shadow: 0 0 13px #ffffff38; }
+.availability .dot {
+  width: 12px;
+  height: 12px;
+  background: #6ee7a0;
+  box-shadow: 0 0 0 3px rgb(110 231 160 / .1), 0 0 15px rgb(110 231 160 / .25);
+}
 .cover { background: #140d1c; border-color: #ffffff4a; }
 .cover::after { background: linear-gradient(transparent 35%, #050307c7); }
 .round { border-color: #ffffff55; }
