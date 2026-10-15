@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#141512">
+  <meta name="description" content="Leo Cahunek — fotografija, video produkcija, montaža i grafički dizajn. Vizualni kreator iz Varaždina.">
+  <title>Leo Cahunek — Pokret. Slika. Identitet.</title>
+  <script>document.documentElement.classList.add('js', 'intro-running');</script>
+  <link rel="icon" href="assets/camera-cursor.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/main.js" defer></script>
+</head>
+<body data-page="home">
+  <a class="skip-link" href="#main">Preskoči na sadržaj</a>
+  <div class="shutter" aria-label="Uvodna animacija otvaranja blende">
+    <svg viewBox="-150 -150 300 300" aria-hidden="true" focusable="false">
+      <defs><linearGradient id="blade" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2e3328"/><stop offset="1" stop-color="#0c100a"/></linearGradient></defs>
+      <g id="aperture-blades"></g>
+    </svg>
+    <div class="shutter-caption"><strong>LEO CAHUNEK</strong>FOTOGRAFIJA · POKRET · DIZAJN</div>
+    <button class="skip-intro" type="button">Preskoči uvod <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></button>
+  </div>
+  <header class="site-header">
+    <a href="index.html" class="brand" aria-label="Leo Cahunek, početna">
+      <span class="brand-mark" aria-hidden="true">LC</span>
+      <span class="brand-name">Leo Cahunek<span class="brand-sub">Visual studio</span></span>
+    </a>
+    <button class="menu-button" type="button" aria-expanded="false" aria-controls="navigation"><span class="menu-label">Meni</span><span class="menu-symbol" aria-hidden="true"></span></button>
+    <nav id="navigation" class="nav" aria-label="Glavna navigacija">
+      <a href="index.html" class="is-active" aria-current="page">Naslovna</a>
+      <a href="radovi.html">Radovi</a>
+      <a href="o-meni.html">O meni</a>
+      <a href="kontakt.html" class="nav-contact">Kontakt <span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></a>
+    </nav>
+  </header>
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-top">
+        <div>
+          <p class="eyebrow hero-kicker">Neovisni vizualni studio · Varaždin, HR</p>
+          <h1 id="hero-title"><span class="hero-title-line line"><span>Ideje koje se vide.</span></span><span class="hero-title-line line"><span>Priče koje ostaju.</span></span></h1>
+        </div>
+        <div class="availability"><span class="dot" aria-hidden="true"></span><span>Otvoren za nove suradnje<small>Stvorimo nešto dobro.</small></span></div>
+      </div>
+      <span class="hero-footnote" aria-hidden="true">ODABRANI RADOVI / 01 — 05</span>
+      <div class="covers" role="region" aria-roledescription="karusel" aria-label="Odabrani radovi"></div>
+      <div class="hero-bottom">
+        <p class="intro"><strong>Ja sam Leo. Vizualni kreator.</strong><br>Spajam fotografiju, pokret i dizajn<br class="mobile-hide"> u priče s vlastitim karakterom.</p>
+        <div class="deck-controls" role="group" aria-label="Kontrole odabranih radova">
+          <button class="round" id="prev" type="button" aria-label="Prethodni rad">←</button>
+          <span id="counter" aria-label="Redni broj odabranog rada">01 / 05</span>
+          <button class="round" id="next" type="button" aria-label="Sljedeći rad">→</button>
+          <button class="round pause-button" id="pause" type="button" aria-label="Pauziraj automatsko listanje" aria-pressed="false"><span aria-hidden="true">Ⅱ</span></button>
+        </div>
+        <a class="scroll-link" href="radovi.html">ISTRAŽI RADOVE <span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></a>
+      </div>
+      <p id="carousel-status" class="sr-only" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <a href="index.html" class="brand" aria-label="Leo Cahunek, početna"><span class="brand-mark" aria-hidden="true">LC</span><span class="brand-name">Leo Cahunek<span class="brand-sub">Visual studio</span></span></a>
+    <div class="footer-copy"><span>© 2026 Leo Cahunek</span><br><span>Fotografija. Pokret. Dizajn.</span></div>
+    <a href="#" class="back-top">Natrag na vrh <span aria-hidden="true">↑</span></a>
+  </footer>
+  <dialog id="lightbox" aria-labelledby="lightbox-title">
+    <div class="dialog-shell">
+      <div class="dialog-toolbar"><span class="dialog-category"></span><button class="dialog-close" type="button" aria-label="Zatvori pregled">Zatvori <span aria-hidden="true">×</span></button></div>
+      <div id="lightbox-content"></div>
+      <div class="dialog-bottom"><div><h3 id="lightbox-title"></h3><p id="lightbox-description"></p></div><div class="dialog-controls"><button class="round" id="lightbox-prev" type="button" aria-label="Prethodni rad u pregledu">←</button><button class="round" id="lightbox-next" type="button" aria-label="Sljedeći rad u pregledu">→</button></div></div>
+    </div>
+  </dialog>
+</body>
+</html>
