@@ -80,3 +80,14 @@ body:not([data-page=home]) .site-header{background:#141512f2;border-color:#34372
 }
 @media(max-width:360px){.section h1{font-size:43px}}
 @media(prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none!important}.site-header{view-transition-name:none}}
+
+/* A continuous orbit, with its front arc descending from right to left. */
+.hero-top{position:relative;z-index:2}
+.hero-bottom{z-index:2}
+.covers{top:30%;bottom:190px;height:auto;z-index:1}
+.cover{top:50%;width:min(29vw,360px);max-width:none;transform:translate(-50%,-50%);transition:box-shadow .35s;backface-visibility:hidden;will-change:transform}
+@media(min-width:1700px){.covers{top:32%;bottom:200px}.cover{width:400px}}
+@media(max-width:1050px){.hero{min-height:930px}.covers{top:34%;bottom:185px}.cover{width:min(39vw,350px)}}
+@media(max-width:800px){.hero{min-height:930px}.covers{top:36%;bottom:180px}.cover{width:min(48vw,330px)}}
+@media(max-width:560px){.hero{min-height:900px}.covers{top:37%;bottom:155px}.cover{width:66vw;max-width:330px}}
+@media(max-width:360px){.hero{min-height:850px}.covers{top:36%;bottom:150px}.cover{width:70vw}}

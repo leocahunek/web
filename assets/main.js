@@ -3,6 +3,7 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  let reducedMotion = motion.matches;
   const projects = [
     { name: 'Između svjetla i sjene', sub: 'Portretna fotografija', cat: 'photo', art: 'portrait', img: 'photo-1534528741775-53994a69daeb', short: 'Portraits', year: '01' },
     { name: 'Grad u pokretu', sub: 'Video / ogledni film', cat: 'video', art: 'city', img: 'photo-1519608487953-e999c86e7455', short: 'After hours', year: '02' },
@@ -27,92 +28,175 @@
   let restartAutoplay = () => {};
   let syncPauseButton = () => {};
   const gallery = $('.gallery');
-  if ($(".covers")) {
-  const covers = $('.covers');
-  const featured = projects.slice(0, 5);
-  const hero = $('.hero');
-  let active = 0;
-  let userPaused = false;
-  let hoverPaused = false;
-  let focusPaused = false;
-  let autoplay;
-  let lastSwipe = 0;
-  featured.forEach((p, i) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'cover';
-    button.setAttribute('aria-label', `Prikaži ${p.name}, rad ${i + 1} od ${featured.length}`);
-    button.innerHTML = `${artHTML(p)}${imageHTML(p, i !== 0)}<span class="cover-topline" aria-hidden="true"><span>LEO / SELECTED WORK</span><span>${p.year} / 05</span></span><span class="cover-label" aria-hidden="true"><span><small>${categories[p.cat]}</small><strong>${p.short}</strong></span><span class="cover-open"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></span>`;
-    button.addEventListener('click', () => {
-      if (performance.now() - lastSwipe < 400) return;
-      if (active === i) openProject(i);
-      else { active = i; renderDeck(true); restartAutoplay(); }
+  if ($('.covers')) {
+    const covers = $('.covers');
+    const featured = projects.slice(0, 5);
+    const total = featured.length;
+    const fullTurn = Math.PI * 2;
+    const unitsPerMs = total / 30000;
+    let position = 0;
+    let selected = -1;
+    let userPaused = false;
+    let focusPaused = false;
+    let offscreen = false;
+    let frame = null;
+    let previousTime = null;
+    let manualMove = null;
+    let lastSwipe = -Infinity;
+    let geometry = { radiusX: 0, radiusY: 0, depthY: 0 };
+
+    featured.forEach((p, i) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'cover';
+      button.setAttribute('aria-label', `Prikaži ${p.name}, rad ${i + 1} od ${total}`);
+      button.innerHTML = `${artHTML(p)}${imageHTML(p, i !== 0)}<span class="cover-topline" aria-hidden="true"><span>LEO / SELECTED WORK</span><span>${p.year} / 05</span></span><span class="cover-label" aria-hidden="true"><span><small>${categories[p.cat]}</small><strong>${p.short}</strong></span><span class="cover-open"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></span>`;
+      button.addEventListener('click', () => {
+        if (performance.now() - lastSwipe < 400) return;
+        if (selected === i) openProject(i);
+        else {
+          const distance = ((i - position + total * 1.5) % total + total) % total - total / 2;
+          moveTo(position + distance);
+        }
+      });
+      covers.append(button);
     });
-    covers.append(button);
-  });
-  function renderDeck(announce = false) {
-    [...covers.children].forEach((el, i) => {
-      let distance = (i - active + featured.length) % featured.length;
-      if (distance > featured.length / 2) distance -= featured.length;
-      el.style.setProperty('--distance', distance);
-      el.style.setProperty('--depth', Math.abs(distance));
-      el.style.zIndex = featured.length - Math.abs(distance);
-      el.classList.toggle('is-active', distance === 0);
-      el.tabIndex = distance === 0 ? 0 : -1;
-      el.setAttribute('aria-current', String(distance === 0));
-    });
-    $('#counter').textContent = `${String(active + 1).padStart(2, '0')} / ${String(featured.length).padStart(2, '0')}`;
-    if (announce) $('#carousel-status').textContent = `${featured[active].name}. Rad ${active + 1} od ${featured.length}.`;
-  }
-  function stepDeck(direction, announce = true) {
-    active = (active + direction + featured.length) % featured.length;
-    renderDeck(announce);
-  }
-  restartAutoplay = function () {
-    clearInterval(autoplay);
-    if (motion.matches || userPaused || hoverPaused || focusPaused || introRunning || document.hidden || $('#lightbox').open) return;
-    autoplay = setInterval(() => stepDeck(1, false), 6000);
-  };
-  $('#prev').addEventListener('click', () => { stepDeck(-1); restartAutoplay(); });
-  $('#next').addEventListener('click', () => { stepDeck(1); restartAutoplay(); });
-  const pause = $('#pause');
-  syncPauseButton = function () {
-    pause.hidden = motion.matches;
-    pause.setAttribute('aria-pressed', String(userPaused));
-    pause.setAttribute('aria-label', userPaused ? 'Pokreni automatsko listanje' : 'Pauziraj automatsko listanje');
-    pause.title = pause.getAttribute('aria-label');
-    pause.firstElementChild.innerHTML = userPaused ? '<svg class="ui-icon play-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m8 5 11 7-11 7Z"/></svg>' : '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5v14M15 5v14"/></svg>';
-  };
-  pause.addEventListener('click', () => { userPaused = !userPaused; syncPauseButton(); restartAutoplay(); });
-  covers.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') { hoverPaused = true; restartAutoplay(); } });
-  covers.addEventListener('pointerleave', () => { hoverPaused = false; restartAutoplay(); });
-  hero.addEventListener('focusin', () => { focusPaused = true; restartAutoplay(); });
-  hero.addEventListener('focusout', e => { if (!hero.contains(e.relatedTarget)) { focusPaused = false; restartAutoplay(); } });
-  covers.addEventListener('keydown', e => {
-    if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
-    e.preventDefault();
-    stepDeck(e.key === 'ArrowLeft' ? -1 : 1);
-    covers.children[active].focus({ preventScroll: true });
-    restartAutoplay();
-  });
-  let pointerStart;
-  covers.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') pointerStart = { x: e.clientX, y: e.clientY, id: e.pointerId }; });
-  covers.addEventListener('pointerup', e => {
-    if (!pointerStart || pointerStart.id !== e.pointerId) return;
-    const dx = e.clientX - pointerStart.x;
-    const dy = e.clientY - pointerStart.y;
-    pointerStart = null;
-    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-      lastSwipe = performance.now();
-      stepDeck(dx < 0 ? 1 : -1);
+    const cards = [...covers.children];
+
+    function measureOrbit() {
+      const width = covers.clientWidth;
+      const cardWidth = cards[0].offsetWidth;
+      geometry.radiusX = width * (width <= 560 ? .64 : .34);
+      geometry.radiusY = Math.min(geometry.radiusX * (width <= 560 ? .54 : .4), covers.clientHeight * .29);
+      geometry.depthY = cardWidth * .15;
+      renderOrbit();
+    }
+    function renderOrbit(announce = false) {
+      // The front half travels right/up to left/down; the return passes behind it.
+      cards.forEach((card, i) => {
+        const angle = (position - i) * fullTurn / total + Math.PI / 2;
+        const depth = (Math.sin(angle) + 1) / 2;
+        const x = Math.cos(angle) * geometry.radiusX;
+        const y = -Math.cos(angle) * geometry.radiusY + Math.sin(angle) * geometry.depthY;
+        const scale = .58 + depth * .42;
+        const yaw = -Math.cos(angle) * 14;
+        const tilt = -8 + depth * 5;
+        card.style.transform = `translate(-50%, -50%) translate3d(${x.toFixed(3)}px, ${y.toFixed(3)}px, 0) rotateY(${yaw.toFixed(3)}deg) rotateZ(${tilt.toFixed(3)}deg) scale(${scale.toFixed(4)})`;
+        card.style.zIndex = String(Math.round(depth * 100));
+        card.style.filter = `brightness(${(.38 + depth * .62).toFixed(3)})`;
+        card.style.opacity = String((.4 + depth * .6).toFixed(3));
+      });
+      const next = ((Math.round(position) % total) + total) % total;
+      if (next !== selected) {
+        selected = next;
+        cards.forEach((card, i) => {
+          card.classList.toggle('is-active', i === selected);
+          card.tabIndex = i === selected ? 0 : -1;
+          card.setAttribute('aria-current', String(i === selected));
+        });
+        $('#counter').textContent = `${String(selected + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
+      }
+      if (announce) $('#carousel-status').textContent = `${featured[selected].name}. Rad ${selected + 1} od ${total}.`;
+    }
+    function mayRun() {
+      return !reducedMotion && !userPaused && !focusPaused && !offscreen && !introRunning && !document.hidden && !$('#lightbox').open;
+    }
+    function tick(now) {
+      frame = null;
+      if (manualMove) {
+        if (manualMove.started === null) manualMove.started = now;
+        const progress = Math.min(1, (now - manualMove.started) / 850);
+        const eased = progress * progress * (3 - 2 * progress);
+        position = manualMove.from + (manualMove.to - manualMove.from) * eased;
+        if (progress === 1) {
+          manualMove = null;
+          renderOrbit(true);
+        }
+      } else if (mayRun() && previousTime !== null) {
+        position += Math.min(80, now - previousTime) * unitsPerMs;
+        // Keep phase bounded after long-running visits without changing the orbit.
+        position = ((position % total) + total) % total;
+      }
+      renderOrbit();
+      previousTime = now;
+      if (manualMove || mayRun()) frame = requestAnimationFrame(tick);
+      else previousTime = null;
+    }
+    restartAutoplay = function () {
+      if (reducedMotion && manualMove) {
+        position = manualMove.to;
+        manualMove = null;
+        renderOrbit(true);
+      }
+      const blocked = introRunning || document.hidden || $('#lightbox').open || offscreen;
+      if (blocked || (!manualMove && !mayRun())) {
+        if (frame !== null) cancelAnimationFrame(frame);
+        frame = null;
+        previousTime = null;
+      } else if (frame === null) {
+        previousTime = null;
+        frame = requestAnimationFrame(tick);
+      }
+    };
+    function moveTo(target) {
+      if (reducedMotion) {
+        position = target;
+        renderOrbit(true);
+      } else manualMove = { from: position, to: target, started: null };
       restartAutoplay();
     }
-  });
-  covers.addEventListener('pointercancel', () => { pointerStart = null; });
-  document.addEventListener('visibilitychange', restartAutoplay);
-  renderDeck();
-  syncPauseButton();
-
+    function stepDeck(direction) { moveTo(Math.round(manualMove?.to ?? position) + direction); }
+    $('#prev').addEventListener('click', () => stepDeck(-1));
+    $('#next').addEventListener('click', () => stepDeck(1));
+    const pause = $('#pause');
+    syncPauseButton = function () {
+      pause.hidden = reducedMotion;
+      pause.setAttribute('aria-pressed', String(userPaused));
+      pause.setAttribute('aria-label', userPaused ? 'Pokreni kruženje radova' : 'Pauziraj kruženje radova');
+      pause.title = pause.getAttribute('aria-label');
+      pause.firstElementChild.innerHTML = userPaused ? '<svg class="ui-icon play-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m8 5 11 7-11 7Z"/></svg>' : '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5v14M15 5v14"/></svg>';
+    };
+    pause.addEventListener('click', () => {
+      userPaused = !userPaused;
+      if (userPaused) manualMove = null;
+      syncPauseButton();
+      restartAutoplay();
+    });
+    covers.addEventListener('focusin', () => { focusPaused = true; restartAutoplay(); });
+    covers.addEventListener('focusout', e => {
+      if (!covers.contains(e.relatedTarget)) { focusPaused = false; restartAutoplay(); }
+    });
+    covers.addEventListener('keydown', e => {
+      if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      e.preventDefault();
+      const target = Math.round(manualMove?.to ?? position) + (e.key === 'ArrowLeft' ? -1 : 1);
+      moveTo(target);
+      cards[((target % total) + total) % total].focus({ preventScroll: true });
+    });
+    let pointerStart;
+    covers.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'mouse') pointerStart = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    });
+    covers.addEventListener('pointerup', e => {
+      if (!pointerStart || pointerStart.id !== e.pointerId) return;
+      const dx = e.clientX - pointerStart.x;
+      const dy = e.clientY - pointerStart.y;
+      pointerStart = null;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        lastSwipe = performance.now();
+        stepDeck(dx < 0 ? 1 : -1);
+      }
+    });
+    covers.addEventListener('pointercancel', () => { pointerStart = null; });
+    document.addEventListener('visibilitychange', restartAutoplay);
+    if ('ResizeObserver' in window) new ResizeObserver(measureOrbit).observe(covers);
+    else addEventListener('resize', measureOrbit);
+    if ('IntersectionObserver' in window) new IntersectionObserver(entries => {
+      offscreen = !entries[0].isIntersecting;
+      restartAutoplay();
+    }, { threshold: .01 }).observe(covers);
+    measureOrbit();
+    syncPauseButton();
   }
 
   if (gallery) {
@@ -138,7 +222,7 @@
       card.hidden = button.dataset.filter !== 'all' && card.dataset.category !== button.dataset.filter;
       if (!card.hidden) {
         card.classList.add('is-visible');
-        if (!motion.matches) card.animate([{ opacity: .15, transform: 'translateY(16px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 450, delay: count * 45, easing: 'cubic-bezier(.22,1,.36,1)' });
+        if (!reducedMotion) card.animate([{ opacity: .15, transform: 'translateY(16px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 450, delay: count * 45, easing: 'cubic-bezier(.22,1,.36,1)' });
         count++;
       }
     });
@@ -212,7 +296,7 @@
 
   const revealElements = $$('[data-reveal]');
   let revealObserver;
-  if ('IntersectionObserver' in window && !motion.matches) {
+  if ('IntersectionObserver' in window && !reducedMotion) {
     revealObserver = new IntersectionObserver(entries => entries.forEach(entry => {
       if (entry.isIntersecting) { entry.target.classList.add('is-visible'); revealObserver.unobserve(entry.target); }
     }), { threshold: .08, rootMargin: '0px 0px -25px 0px' });
@@ -274,7 +358,7 @@
   }
   $('.skip-intro')?.addEventListener('click', finishIntro);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && introRunning) finishIntro(); });
-  if (!shutter || motion.matches) finishIntro();
+  if (!shutter || reducedMotion) finishIntro();
   else {
     introContent.forEach(el => { el.inert = true; });
     document.documentElement.style.overflow = 'hidden';
@@ -287,8 +371,9 @@
     }
     frame = requestAnimationFrame(tick);
   }
-  motion.addEventListener('change', () => {
-    if (motion.matches) {
+  motion.addEventListener('change', event => {
+    reducedMotion = event.matches;
+    if (reducedMotion) {
       finishIntro();
       revealObserver?.disconnect();
       revealElements.forEach(el => el.classList.add('is-visible'));

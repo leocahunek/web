@@ -18,7 +18,8 @@ Nastavi uređivati priloženi web portfolio za Lea Cahuneka. Sačuvaj tamni eleg
 
 ## Implementirano
 - Uvod: potpuno zatvorena blenda sa šest lamela, stanka 0,65 s pa otvaranje 2,9 s.
-- Naslovna s animiranom galerijom omota, strelicama i swipe gestom.
+- Naslovna s neprekidnim kruženjem omota po dijagonali: prednji niz ide od gornjeg desnog prema donjem lijevom kutu, a povratak prolazi iza njega.
+- Strelice, swipe i pauziranje ostaju dostupni; uz postavku smanjenog kretanja omoti miruju.
 - Dorađena tipografija, zaglavlje, grafički omoti i raspored za računalo, tablet i mobitel.
 - Fina, statična zrnata tekstura u pozadini i fotoaparat kao pokazivač na uređajima s mišem; na poljima za unos ostaje tekstni pokazivač.
 - Četiri zasebne HTML stranice, aktivna stavka navigacije i blagi prijelazi između stranica u preglednicima koji ih podržavaju.
