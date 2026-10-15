@@ -1,0 +1,92 @@
+/* The home screen fits the viewport; the other pages keep their normal scroll. */
+html.home-page,
+.home-page body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.home-page .hero {
+  --gutter: 4.5vw;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(10px, 1.8dvh, 20px);
+  height: 100svh;
+  height: 100dvh;
+  min-height: 0;
+  max-height: none;
+  padding: clamp(100px, 14dvh, 150px) var(--gutter) max(22px, env(safe-area-inset-bottom));
+  border-bottom: 0;
+  touch-action: pinch-zoom;
+}
+.home-page .hero-top { grid-row: 1; }
+.home-page .hero h1 { font-size: clamp(34px, min(5.55vw, 8dvh), 90px); }
+.home-page .hero-kicker { margin-bottom: clamp(10px, 2dvh, 21px); }
+.home-page .covers {
+  grid-row: 2;
+  position: relative;
+  inset: auto;
+  width: calc(100% + var(--gutter) * 2);
+  height: auto;
+  min-height: 0;
+  margin-inline: calc(-1 * var(--gutter));
+  container-type: size;
+  touch-action: pinch-zoom;
+}
+.home-page .cover { width: min(29vw, 360px, 68cqh); max-width: none; }
+.home-page .hero-bottom {
+  grid-row: 3;
+  position: relative;
+  inset: auto;
+  align-items: center;
+}
+.home-page .hero-footnote { top: 45%; }
+
+@media (min-width: 1700px) {
+  .home-page .cover { width: min(29vw, 440px, 68cqh); }
+}
+@media (max-width: 1050px) {
+  .home-page .cover { width: min(39vw, 350px, 68cqh); }
+}
+@media (max-width: 800px) {
+  .home-page .hero-top { display: block; }
+  .home-page .hero h1 { font-size: clamp(34px, min(7.5vw, 7.8dvh), 65px); }
+  .home-page .availability { margin-top: 16px; }
+  .home-page .cover { width: min(48vw, 330px, 68cqh); }
+}
+@media (max-width: 560px) {
+  .home-page .hero {
+    --gutter: 5vw;
+    padding-top: clamp(88px, 13dvh, 110px);
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+  }
+  .home-page .hero h1 { font-size: clamp(28px, min(9.2vw, 6dvh), 49px); }
+  .home-page .cover { width: min(66vw, 330px, 68cqh); }
+  .home-page .cover-topline { inset: 14px 14px auto; font-size: 6px; letter-spacing: 1px; }
+  .home-page .cover-label { inset: auto 15px 15px; gap: 8px; }
+  .home-page .cover-label strong { font-size: clamp(19px, 6vw, 27px); }
+  .home-page .cover-label small { font-size: 7px; }
+}
+@media (max-height: 500px) and (min-width: 600px) {
+  .home-page .hero {
+    grid-template-columns: 1fr 1.1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+    padding-top: 86px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    gap: 10px 18px;
+  }
+  .home-page .hero-top { grid-area: 1 / 1; align-self: center; display: block; }
+  .home-page .hero h1 { font-size: clamp(26px, 4vw, 40px); }
+  .home-page .hero-kicker { font-size: 7px; letter-spacing: 1px; margin-bottom: 9px; }
+  .home-page .availability { display: inline-flex; margin-top: 14px; padding: 8px 12px; }
+  .home-page .availability small { display: none; }
+  .home-page .covers { grid-area: 1 / 2; margin: 0; width: 100%; }
+  .home-page .hero-bottom { grid-area: 2 / 1 / 3 / -1; }
+  .home-page .hero-footnote { display: none; }
+  .home-page .intro { font-size: 9px; }
+  .home-page .cover { width: min(24vw, 68cqh); }
+  .home-page .cover-topline { inset: 10px 10px auto; font-size: 5px; letter-spacing: .5px; }
+  .home-page .cover-label { inset: auto 12px 12px; gap: 6px; }
+  .home-page .cover-label strong { font-size: 19px; }
+  .home-page .cover-label small { font-size: 6px; }
+  .home-page .cover-open { width: 24px; height: 24px; font-size: 14px; }
+}

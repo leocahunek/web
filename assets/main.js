@@ -43,6 +43,7 @@
     let previousTime = null;
     let manualMove = null;
     let lastSwipe = -Infinity;
+    let scrollBoost = 0;
     let geometry = { radiusX: 0, radiusY: 0, depthY: 0 };
 
     featured.forEach((p, i) => {
@@ -66,8 +67,10 @@
     function measureOrbit() {
       const width = covers.clientWidth;
       const cardWidth = cards[0].offsetWidth;
-      geometry.radiusX = width * (width <= 560 ? .64 : .34);
-      geometry.radiusY = Math.min(geometry.radiusX * (width <= 560 ? .54 : .4), covers.clientHeight * .29);
+      const sideBySide = innerHeight <= 500 && innerWidth >= 600;
+      geometry.radiusX = width * (width <= 560 && !sideBySide ? .64 : .34);
+      if (sideBySide) geometry.radiusX = Math.min(geometry.radiusX, Math.max(0, (width - cardWidth) / 2));
+      geometry.radiusY = Math.min(geometry.radiusX * (width <= 560 ? .54 : .4), covers.clientHeight * .1);
       geometry.depthY = cardWidth * .15;
       renderOrbit();
     }
@@ -103,6 +106,7 @@
     }
     function tick(now) {
       frame = null;
+      const elapsed = previousTime === null ? 0 : Math.min(80, now - previousTime);
       if (manualMove) {
         if (manualMove.started === null) manualMove.started = now;
         const progress = Math.min(1, (now - manualMove.started) / 850);
@@ -113,10 +117,11 @@
           renderOrbit(true);
         }
       } else if (mayRun() && previousTime !== null) {
-        position += Math.min(80, now - previousTime) * unitsPerMs;
+        position += elapsed * unitsPerMs * (1 + scrollBoost);
         // Keep phase bounded after long-running visits without changing the orbit.
         position = ((position % total) + total) % total;
       }
+      scrollBoost *= Math.exp(-elapsed / 650);
       renderOrbit();
       previousTime = now;
       if (manualMove || mayRun()) frame = requestAnimationFrame(tick);
@@ -129,6 +134,7 @@
         renderOrbit(true);
       }
       const blocked = introRunning || document.hidden || $('#lightbox').open || offscreen;
+      if (!mayRun()) scrollBoost = 0;
       if (blocked || (!manualMove && !mayRun())) {
         if (frame !== null) cancelAnimationFrame(frame);
         frame = null;
@@ -188,6 +194,34 @@
       }
     });
     covers.addEventListener('pointercancel', () => { pointerStart = null; });
+    // Wheel and vertical touch gestures add speed, then coast back to the base orbit.
+    const hero = covers.closest('.hero');
+    function boostOrbit(delta) {
+      if (!mayRun() || manualMove) return;
+      scrollBoost = Math.min(7, scrollBoost + Math.min(240, Math.abs(delta)) * .018);
+      restartAutoplay();
+    }
+    hero.addEventListener('wheel', e => {
+      if (e.ctrlKey) return;
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? hero.clientHeight : 1;
+      boostOrbit(e.deltaY * unit);
+    }, { passive: true });
+    let scrollTouch = null;
+    hero.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'touch' && e.isPrimary) scrollTouch = { id: e.pointerId, x: e.clientX, y: e.clientY, previousY: e.clientY };
+    });
+    hero.addEventListener('pointermove', e => {
+      if (!scrollTouch || scrollTouch.id !== e.pointerId) return;
+      const dx = e.clientX - scrollTouch.x;
+      const dy = e.clientY - scrollTouch.y;
+      if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx) * 1.2) {
+        lastSwipe = performance.now();
+        boostOrbit((e.clientY - scrollTouch.previousY) * 3);
+      }
+      scrollTouch.previousY = e.clientY;
+    });
+    hero.addEventListener('pointerup', () => { scrollTouch = null; });
+    hero.addEventListener('pointercancel', () => { scrollTouch = null; });
     document.addEventListener('visibilitychange', restartAutoplay);
     if ('ResizeObserver' in window) new ResizeObserver(measureOrbit).observe(covers);
     else addEventListener('resize', measureOrbit);
