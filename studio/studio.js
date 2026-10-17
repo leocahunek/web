@@ -16,7 +16,7 @@
   let stopWatching = () => {};
   const previews = new Set();
   const list = $('#project-list');
-  const types = new Set(['image/jpeg','image/png','image/webp','image/avif','image/gif','video/mp4','video/webm']);
+  const types = new Set(['image/jpeg','image/png','image/webp','image/avif','image/gif','video/mp4','video/webm','video/quicktime']);
   const dirty = () => changes !== savedChanges;
 
   function status(message,error = false) {
@@ -245,6 +245,10 @@
     if (!file.size) throw new Error(`Datoteka „${file.name}” je prazna.`);
   }
   function attachFile(project,file) {
+    // Some browsers report MOV files with no MIME type or as generic binary.
+    if (/\.mov$/i.test(file.name) && ['', 'application/octet-stream', 'video/x-quicktime'].includes(file.type)) {
+      file = new File([file],file.name,{type:'video/quicktime',lastModified:file.lastModified});
+    }
     validateFile(file);
     if (file.type.startsWith('video/')) {
       project.pendingVideo = file;
@@ -343,7 +347,7 @@
   }
   async function upload(project,field,file) {
     const blob = field === 'image' ? await prepareImage(file) : file;
-    const extension = {'image/webp':'webp','image/png':'png','image/jpeg':'jpg','image/gif':'gif','video/mp4':'mp4','video/webm':'webm'}[blob.type];
+    const extension = {'image/webp':'webp','image/png':'png','image/jpeg':'jpg','image/gif':'gif','video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov'}[blob.type];
     if (!extension) throw new Error('Datoteku nije moguće pripremiti za objavu.');
     const auth = await headers();
     const path = `${session.user.id}/${project.id}/${crypto.randomUUID()}.${extension}`;

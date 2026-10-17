@@ -28,6 +28,7 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
       if (url.pathname.startsWith('/storage/v1/object/public/')) return route.fulfill({contentType:'image/png',body:png});
       if (url.pathname.startsWith('/storage/v1/object/')) {
         if (failUpload) { failUpload = false; return route.fulfill({status:500,body:'{}'}); }
+        if (url.pathname.endsWith('.mov')) assert.equal(request.headers()['content-type'],'video/quicktime');
         uploads++;
         if (holdUpload) await holdUpload();
         return json({Key:'uploaded'});
@@ -198,6 +199,14 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
     await save();
     assert.equal(doc.projects.at(-1).cat,'video');
     console.log('PASS: client accepts exactly 150 MB and rejects larger files (simulated sizes)');
+
+    for (const mimeType of ['video/quicktime','application/octet-stream','']) {
+      await studio.locator('#files').setInputFiles({name:'camera.MOV',mimeType,buffer:Buffer.from('mock MOV upload')});
+      await save();
+      assert.equal(doc.projects.at(-1).cat,'video');
+      assert(doc.projects.at(-1).video.endsWith('.mov'));
+    }
+    console.log('PASS: MOV upload with QuickTime, generic and missing MIME types (not codec playback)');
 
     // A stale editor must retain conflict protection for galleries as well.
     await card.locator('[data-field=sub]').fill('Concurrent change test');

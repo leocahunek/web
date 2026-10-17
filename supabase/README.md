@@ -7,7 +7,7 @@ Javni web ostaje na GitHub Pagesu. Supabase dodaje prijavu, bazu radova i spremi
 3. U `data/portfolio-config.json` upiši Project URL (npr. `https://PROJECT.supabase.co`) i **javni publishable ključ** `sb_publishable_…`. Podržan je i stariji javni `anon` ključ. **Secret i service_role ključevi ne smiju se koristiti na webu.** Javni ključ nije lozinka; prava provjeravaju pravila baze i Storagea.
 4. Objavi konfiguraciju i otvori `/studio/`. Prijavi se vlastitim računom. Dodavanje, preslagivanje, uređivanje i uklanjanje radova automatski se spremaju nakon kratke stanke u uređivanju. Gumb „Spremi odmah” sprema bez čekanja.
 
-Nove fotografije pripremaju se za web do 2400 px u WebP formatu. GIF zadržava izvorni oblik. MP4 i WebM prenose se bez promjene; ograničenje je 150 MB po datoteci. Videozapisu možeš dodati naslovnu fotografiju opcijom „Zamijeni datoteku”. Brisanjem rada uklanjaš ga s weba; izvorne datoteke ostaju u vlastitom Supabase spremištu dok ih ondje ne ukloniš.
+Nove fotografije pripremaju se za web do 2400 px u WebP formatu. GIF zadržava izvorni oblik. MP4, WebM i MOV prenose se bez promjene; ograničenje je 150 MB po datoteci. Videozapisu možeš dodati naslovnu fotografiju opcijom „Zamijeni datoteku”. Brisanjem rada uklanjaš ga s weba; izvorne datoteke ostaju u vlastitom Supabase spremištu dok ih ondje ne ukloniš.
 
 ## Više fotografija u jednom projektu
 
@@ -35,3 +35,7 @@ U Studiju otvori „O meni — tekst i fotografija”. Možeš promijeniti naslo
 ## Ograničenje prijenosa 150 MB
 
 Za postojeći projekt pokreni `supabase/upload-limit.sql` u SQL Editoru. U Storage postavkama postavi i globalni File size limit na najmanje 150 MB, ako to podržava tvoj Supabase plan. Ograničenje bucketa ne može nadjačati niže globalno ograničenje projekta. Studio provjerava 150 × 1024 × 1024 bajtova po datoteci; fotografije se i dalje pripremaju za web. Prijenos može trajati do 10 minuta. Stvarni prijenos datoteke od 150 MB treba provjeriti na konfiguriranom projektu.
+
+## MOV videozapisi
+
+Za postojeći projekt jednom pokreni `supabase/mov.sql` u SQL Editoru. Skripta dodaje MIME tip `video/quicktime` u postojeći popis dopuštenih formata bucketa, bez promjene ograničenja veličine. Studio prihvaća `.mov` i kad preglednik ne prepozna MIME tip te ga prenosi kao `video/quicktime`. MOV se ne pretvara u drugi format. Reprodukcija ovisi o kodeku i pregledniku; za najširu podršku izvezi video kao MP4 s H.264 videozapisom i AAC zvukom. Upload testovi koriste testne datoteke i ne potvrđuju reprodukciju stvarnog MOV videa.
