@@ -425,21 +425,6 @@
   }
   watchImages();
 
-  $('#inquiry')?.addEventListener('submit', e => {
-    e.preventDefault();
-    const data = new FormData(e.target);
-    const text = `UPIT ZA SURADNJU — LEO CAHUNEK\n\nIme: ${data.get('name')}\nE-mail: ${data.get('email')}\nUsluga: ${data.get('service')}\nBudžet: ${data.get('budget')}\nRok: ${data.get('deadline') || 'Po dogovoru'}\n\n${data.get('message')}`;
-    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'Leo-Cahunek-upit.txt';
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    $('.form-status').textContent = 'Upit je pripremljen za preuzimanje. Nije poslan — e-mail adresa studija još nije povezana.';
-  });
-
   // Open the blades immediately while the portfolio orbit is already running.
   const shutter = $('.shutter');
   const bladesGroup = $('#aperture-blades');

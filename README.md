@@ -7,7 +7,7 @@ Raspakiraj cijeli ZIP i otvori `index.html` u pregledniku. Zadrži sve HTML dato
 - `index.html` — naslovnica s blendom i omotima radova.
 - `radovi.html` — galerija, filtri i pregled radova.
 - `o-meni.html` — biografija i mjesto za portret.
-- `kontakt.html` — usluge i obrazac za pripremu upita.
+- `kontakt.html` — usluge i kontaktni obrazac koji šalje upite na cahunekleo@gmail.com putem FormSubmita.
 - `assets/style.css`, `assets/main.js` — zajednički izgled i interakcije.
 - `data/portfolio.json`, `assets/portfolio-store.js` — zajednički podaci radova i povezivanje objavljenog sadržaja.
 - `studio/` — admin sučelje, bez poveznice u javnoj navigaciji; aktivacija prijave i sinkronizacije opisana je u `supabase/README.md`.
@@ -35,13 +35,13 @@ Nastavi uređivati priloženi web portfolio za Lea Cahuneka. Sačuvaj tamni eleg
 - Grafičke zamjene ostaju vidljive ako se vanjske fotografije ne učitaju. Ikone su ugrađene SVG grafike i ne trebaju vanjske fontove.
 - Radovi: galerija, filtri i pregled fotografija / oglednog videa.
 - About: opis Lea i mjesto za portret.
-- Contact: usluge i obrazac koji priprema TXT upit za preuzimanje.
+- Contact: usluge i obrazac za slanje upita preko FormSubmita.
 - Prilagodbe za desktop, tablet i mobitel te smanjeno kretanje prema postavkama uređaja.
 - Pripremljen admin `/studio/`: povlačenje datoteka, uređivanje metapodataka, redoslijeda i odabira naslovne, automatsko spremanje te povezivanje sa Supabase Authom, bazom i Storageom. **Prijava i online spremanje nisu aktivni dok se ne postave Supabase projekt i pravila iz `supabase/setup.sql`.**
 
 ## Preostalo prije javnog korištenja
 - Zamijeniti ogledne Unsplash fotografije, privremeni pejzaž na mjestu portreta i demo video stvarnim radovima.
-- Povezati kontaktni obrazac sa slanjem upita. Trenutno ništa ne šalje.
+- Aktivirati adresu primatelja za FormSubmit: nakon prve predaje upita na javnom webu potvrditi aktivacijsku poveznicu u e-mailu na cahunekleo@gmail.com, zatim poslati novi probni upit i provjeriti primitak.
 - Dodatno provjeriti web u Safariju, Firefoxu i na stvarnim uređajima.
 - Fotografije i demo video učitavaju se s vanjskih izvora i zahtijevaju internet. Font Marcellus, tekstura, konture i ikone uključeni su lokalno.
 
@@ -63,3 +63,11 @@ Admin i sinkronizacija provjereni su u Chromiumu s izoliranim API mockom: zabran
 Provjereno u Chromiumu preko lokalnog HTTP servera: uvod i preskakanje uvoda, galerija, tipkovnica, lightbox, filtri, mobilni izbornik, swipe, pauziranje i nastavak listanja, promjena postavke smanjenog kretanja i sadržaj preuzetog TXT upita. Sve stranice provjerene su na širinama 320, 390, 768 i 1440 px bez vodoravnog pomicanja i JavaScript pogrešaka. Vanjske fotografije i video još su ograničeni mrežnom politikom cloud okruženja; grafički omoti ostaju dostupni.
 
 Izvoz je prenosiva kopija izvornog koda. Nema pristupnih tokena ni Git konfiguracije. Hosting identitet izostavljen je kako se kopija može koristiti samostalno.
+
+## Slanje kontaktnih upita
+
+Kontaktni obrazac koristi standardni HTTPS POST na `https://formsubmit.co/cahunekleo@gmail.com`. Polje `email` daje adresu posjetitelja za odgovor, a ime, usluga, budžet, rok i poruka uključeni su u upit. Servis obrađuje slanje i prikazuje potvrdu; ugrađena provjera protiv automatiziranih upita ostaje uključena, uz polje `_honey`. Obrazac radi i bez JavaScripta. Posjetiteljima je dostupan i izravni `mailto:` kontakt.
+
+Prvo slanje zahtijeva potvrdu adrese primatelja kroz FormSubmit aktivacijski e-mail. Tu potvrdu i primitak stvarne poruke treba provjeriti na javnom webu; testovi preglednika presreću zahtjev i ne šalju e-mail. Ako FormSubmit nije dostupan, koristi izravnu e-mail poveznicu. Prethodni TXT demo više ne presreće slanje obrasca.
+
+Provjera obrasca: `node tests/contact.browser.cjs` uz pokrenut lokalni server i Playwright/Chromium. Provjerava se POST sadržaj s uključenim i isključenim JavaScriptom, bez stvarnog slanja e-maila.
