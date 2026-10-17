@@ -486,7 +486,7 @@
     drawBlades(0);
     function tick(now) {
       if (introStart === undefined) introStart = now;
-      const progress = Math.max(0, Math.min(1, (now - introStart) / 900));
+      const progress = Math.max(0, Math.min(1, (now - introStart) / 1500));
       drawBlades(progress);
       if (progress < 1) frame = requestAnimationFrame(tick); else finishIntro();
     }
