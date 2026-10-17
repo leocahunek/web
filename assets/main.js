@@ -425,6 +425,48 @@
   }
   watchImages();
 
+  const inquiry = $('#inquiry');
+  const inquirySuccess = $('#inquiry-success');
+  let sendingInquiry = false;
+  $('#inquiry-success-close')?.addEventListener('click',() => inquirySuccess.close());
+  inquirySuccess?.addEventListener('click',e => { if (e.target === inquirySuccess) inquirySuccess.close(); });
+  inquirySuccess?.addEventListener('close',() => document.body.classList.remove('modal-open'));
+  inquiry?.addEventListener('submit',async e => {
+    e.preventDefault();
+    if (sendingInquiry) return;
+    const button = $('.submit',inquiry);
+    const label = button.innerHTML;
+    const status = $('.form-status',inquiry);
+    const data = Object.fromEntries(new FormData(inquiry));
+    if (data._honey) { status.textContent = 'Slanje nije uspjelo. Osvježi stranicu i pokušaj ponovno.'; return; }
+    sendingInquiry = true;
+    button.disabled = true;
+    button.textContent = 'Šaljem…';
+    status.textContent = 'Šaljem upit…';
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(),20000);
+    try {
+      const action = new URL(inquiry.action);
+      action.pathname = `/ajax${action.pathname}`;
+      const response = await fetch(action.href,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(data),signal:controller.signal});
+      const result = await response.json();
+      if (!response.ok) throw new Error('Slanje nije uspjelo. Pokušaj ponovno ili piši izravno na cahunekleo@gmail.com.');
+      if (/activat|confirm.*email|email.*confirm/i.test(String(result.message || ''))) throw new Error('Prijam upita još nije aktiviran. Piši izravno na cahunekleo@gmail.com.');
+      if (result.success !== true && result.success !== 'true') throw new Error('Servis nije potvrdio slanje. Pokušaj ponovno ili piši izravno na cahunekleo@gmail.com.');
+      inquiry.reset();
+      status.textContent = '';
+      inquirySuccess.showModal();
+      document.body.classList.add('modal-open');
+    } catch (error) {
+      status.textContent = error.name === 'AbortError' ? 'Slanje traje predugo. Pokušaj ponovno ili piši izravno na cahunekleo@gmail.com.' : error instanceof TypeError || error instanceof SyntaxError ? 'Veza sa servisom za slanje nije uspjela. Pokušaj ponovno ili piši izravno na cahunekleo@gmail.com.' : error.message;
+    } finally {
+      clearTimeout(timeout);
+      sendingInquiry = false;
+      button.disabled = false;
+      button.innerHTML = label;
+    }
+  });
+
   // Open the blades immediately while the portfolio orbit is already running.
   const shutter = $('.shutter');
   const bladesGroup = $('#aperture-blades');

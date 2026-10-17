@@ -169,3 +169,8 @@ dialog::backdrop { background: #040206eb; }
 #about-body p { white-space: pre-line; overflow-wrap: anywhere; }
 #about .arrow-link #about-link-text { font-size: inherit; }
 #about-title, #about .role, #about .portrait small, #about .services span { overflow-wrap:anywhere; }
+#inquiry-success { width:min(420px,90vw); border-radius:12px; }
+.inquiry-success-shell { padding:32px; }
+.inquiry-success-shell h2 { margin:0 0 16px; font-size:32px; font-weight:400; }
+.inquiry-success-shell p { color:var(--muted); font-size:14px; line-height:1.7; margin:0 0 24px; }
+#inquiry .submit:disabled { opacity:.6; cursor:wait; }

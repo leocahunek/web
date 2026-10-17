@@ -66,8 +66,8 @@ Izvoz je prenosiva kopija izvornog koda. Nema pristupnih tokena ni Git konfigura
 
 ## Slanje kontaktnih upita
 
-Kontaktni obrazac koristi standardni HTTPS POST na `https://formsubmit.co/cahunekleo@gmail.com`. Polje `email` daje adresu posjetitelja za odgovor, a ime, usluga, budžet, rok i poruka uključeni su u upit. Servis obrađuje slanje i prikazuje potvrdu; ugrađena provjera protiv automatiziranih upita ostaje uključena, uz polje `_honey`. Obrazac radi i bez JavaScripta. Posjetiteljima je dostupan i izravni `mailto:` kontakt.
+Kontaktni obrazac šalje HTTPS POST u pozadini na `https://formsubmit.co/ajax/cahunekleo@gmail.com` i nakon potvrđenog prihvata prikazuje popup „Zahtjev poslan”, bez napuštanja stranice. Polje `email` daje adresu posjetitelja za odgovor, a ime, usluga, budžet, rok i poruka uključeni su u upit. Polje `_captcha=false` isključuje provjeru robota, a nevidljivo polje `_honey` ostaje. Za vrijeme slanja gumb je onemogućen. HTTP pogreške, odbijeni zahtjevi, nepotvrđena aktivacija, prekid veze i neispravan odgovor ne prikazuju uspjeh te zadržavaju uneseni tekst za ponovni pokušaj. Bez JavaScripta ostaje standardni POST na `https://formsubmit.co/cahunekleo@gmail.com`, uz potvrdu na stranici servisa. Posjetiteljima je dostupan i izravni `mailto:` kontakt.
 
 Prvo slanje zahtijeva potvrdu adrese primatelja kroz FormSubmit aktivacijski e-mail. Tu potvrdu i primitak stvarne poruke treba provjeriti na javnom webu; testovi preglednika presreću zahtjev i ne šalju e-mail. Ako FormSubmit nije dostupan, koristi izravnu e-mail poveznicu. Prethodni TXT demo više ne presreće slanje obrasca.
 
-Provjera obrasca: `node tests/contact.browser.cjs` uz pokrenut lokalni server i Playwright/Chromium. Provjerava se POST sadržaj s uključenim i isključenim JavaScriptom, bez stvarnog slanja e-maila.
+Provjera obrasca: `node tests/contact.browser.cjs` uz pokrenut lokalni server i Playwright/Chromium. Provjeravaju se AJAX prihvat i popup, pogreške i ponovni pokušaj, zaštita od dvostrukog slanja te standardni POST bez JavaScripta, bez stvarnog slanja e-maila.
