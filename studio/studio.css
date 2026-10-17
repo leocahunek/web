@@ -98,3 +98,8 @@ h1 { font-size:clamp(40px,5vw,68px); font-weight:400; line-height:1.05; letter-s
 .projects-heading { font-size:28px; font-weight:400; }
 #about-setup-notice a { text-decoration:underline; }
 @media(max-width:650px) { .about-editor-grid { grid-template-columns:1fr; } }
+
+.studio-section-links { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:25px; }
+.studio-section-links a { padding:12px 16px; border:1px solid var(--line); border-radius:6px; font-size:13px; }
+.studio-section-links a:first-child { background:#332340; }
+#about-settings { scroll-margin-top:24px; }

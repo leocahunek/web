@@ -10,7 +10,7 @@
   <link rel="icon" href="../assets/camera-cursor.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../assets/style.css?v=about-editor-1">
   <link rel="stylesheet" href="../assets/theme.css?v=about-editor-1">
-  <link rel="stylesheet" href="studio.css?v=about-editor-1">
+  <link rel="stylesheet" href="studio.css?v=about-visible-1">
   <script src="../assets/portfolio-store.js?v=about-editor-1" defer></script>
   <script src="studio.js?v=about-editor-1" defer></script>
 </head>
@@ -37,7 +37,8 @@
     <section id="workspace" class="workspace" aria-labelledby="workspace-title" hidden>
       <div class="workspace-heading"><div><div class="eyebrow muted">Portfolio / uređivanje</div><h1 id="workspace-title">Tvoj web.</h1></div><div class="save-controls"><span id="save-status" role="status" aria-live="polite">Sve promjene spremljene.</span><button id="save" type="button" class="primary-button" disabled>Spremi odmah ↗</button></div></div>
       <div id="conflict" class="notice" hidden><p>Sadržaj je promijenjen u drugom prozoru. Učitaj aktualnu verziju prije novih izmjena.</p><button id="reload" class="quiet-button" type="button">Učitaj aktualnu verziju</button></div>
-      <details class="about-editor-panel">
+      <nav class="studio-section-links" aria-label="Uređivanje weba"><a href="#about-settings">O meni — tekst i fotografija</a><a href="#project-list">Radovi</a></nav>
+      <details id="about-settings" class="about-editor-panel" open>
         <summary>O meni — tekst i fotografija</summary>
         <p id="about-setup-notice" class="notice" hidden>Za aktivaciju uređivanja jednom pokreni <a href="../supabase/about.sql" target="_blank" rel="noopener">ovu SQL skriptu</a> u Supabase SQL Editoru, zatim osvježi Studio. Postojeći radovi ostaju spremljeni.</p>
         <fieldset id="about-editor" disabled>
