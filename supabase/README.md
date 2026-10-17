@@ -39,3 +39,5 @@ Za postojeći projekt pokreni `supabase/upload-limit.sql` u SQL Editoru. U Stora
 ## MOV videozapisi
 
 Za postojeći projekt jednom pokreni `supabase/mov.sql` u SQL Editoru. Skripta dodaje MIME tip `video/quicktime` u postojeći popis dopuštenih formata bucketa, bez promjene ograničenja veličine. Studio prihvaća `.mov` i kad preglednik ne prepozna MIME tip te ga prenosi kao `video/quicktime`. MOV se ne pretvara u drugi format. Reprodukcija ovisi o kodeku i pregledniku; za najširu podršku izvezi video kao MP4 s H.264 videozapisom i AAC zvukom. Upload testovi koriste testne datoteke i ne potvrđuju reprodukciju stvarnog MOV videa.
+
+Video možeš dodati zasebnim gumbom „Dodaj video”. Kartica prikazuje lokalni pregled odmah nakon odabira; zatim se video automatski prenosi i objavljuje. Ako preglednik ne podržava kodek, kartica prikazuje objašnjenje, a prijenos je i dalje moguć. Datoteke koje preglednik označi generičkim MIME tipom prepoznaju se po nastavku MP4, WebM ili MOV. Pogreške veličine i MIME pravila spremišta prikazuju konkretne upute za postavke.

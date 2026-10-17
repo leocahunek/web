@@ -103,3 +103,10 @@ h1 { font-size:clamp(40px,5vw,68px); font-weight:400; line-height:1.05; letter-s
 .studio-section-links a { padding:12px 16px; border:1px solid var(--line); border-radius:6px; font-size:13px; }
 .studio-section-links a:first-child { background:#332340; }
 #about-settings { scroll-margin-top:24px; }
+
+.editor-cover video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#09050d; z-index:1; }
+.editor-video-status { position:absolute; inset:auto 8px 48px; z-index:2; padding:10px; font-size:11px; line-height:1.5; background:#09050de8; border:1px solid var(--line); border-radius:4px; pointer-events:none; }
+
+.video-upload-action { display:flex; flex-wrap:wrap; align-items:center; gap:15px; margin-top:16px; }
+.video-upload-action .primary-button { cursor:pointer; margin:0; }
+.video-upload-action>span { font-size:12px; color:var(--muted); }

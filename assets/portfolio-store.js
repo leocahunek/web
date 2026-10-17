@@ -69,7 +69,14 @@
     try {
       const response = await fetch(url, { ...options, signal:controller.signal, cache:'no-store', referrerPolicy:'no-referrer' });
       if (!response.ok) {
-        const error = new Error(response.status === 401 || response.status === 403 ? 'Prijava nema ovlasti za ovu radnju.' : 'Spremište trenutačno nije dostupno.');
+        let message = response.status === 401 || response.status === 403 ? 'Prijava nema ovlasti za ovu radnju.' : `Spremište trenutačno nije dostupno (HTTP ${response.status}).`;
+        if (String(url).includes('/storage/v1/')) {
+          const details = await response.json().catch(() => ({}));
+          const reason = [details.code,details.error,details.message].filter(value => typeof value === 'string').join(' ');
+          if (response.status === 413 || /entity.?too.?large|maximum allowed size|exceed.*size|size.*exceed/i.test(reason)) message = 'Supabase odbija veličinu datoteke. Provjeri globalni Storage limit i limit bucketa portfolio-media (najmanje 150 MB).';
+          else if (response.status === 415 || /mime|content.?type|file.?type/i.test(reason)) message = 'Supabase odbija format videa. U dopuštenim formatima bucketa trebaju biti video/mp4, video/webm i video/quicktime.';
+        }
+        const error = new Error(message);
         error.status = response.status;
         throw error;
       }

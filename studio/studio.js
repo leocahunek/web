@@ -19,6 +19,11 @@
   const types = new Set(['image/jpeg','image/png','image/webp','image/avif','image/gif','video/mp4','video/webm','video/quicktime']);
   const dirty = () => changes !== savedChanges;
 
+  function uploadStatus(message) {
+    const notice = $('#upload-status');
+    notice.textContent = message;
+    if (message) notice.scrollIntoView({block:'nearest',behavior:'instant'});
+  }
   function status(message,error = false) {
     $('#save-status').textContent = message;
     $('#save-status').dataset.error = String(error);
@@ -77,8 +82,8 @@
       previews.add(about.preview);
       updateAboutPreview();
       changed();
-      $('#upload-status').textContent = '';
-    } catch (error) { $('#upload-status').textContent = error.message; }
+      uploadStatus('');
+    } catch (error) { uploadStatus(error.message); }
   }
   $('#about-image').addEventListener('change',e => {
     attachAboutImage(e.target.files[0]);
@@ -115,6 +120,8 @@
     list.inert = true;
     $('#about-editor').inert = true;
     $('#files').disabled = true;
+    $('#video-files').disabled = true;
+    $('#add-video').disabled = true;
     dropzone.setAttribute('aria-disabled','true');
     status('Pronađena je novija verzija radova.',true);
   }
@@ -132,6 +139,20 @@
       if (source) image.src = source;
       else image.hidden = true;
       $('.video-label',card).hidden = !project.video && !project.pendingVideo;
+      const video = $('video',card);
+      const videoSource = project.videoPreview || project.video;
+      if (videoSource) {
+        video.hidden = false;
+        video.src = videoSource;
+        video.setAttribute('aria-label',`Pregled videa: ${project.name}`);
+        if (source) video.poster = source;
+        image.hidden = true;
+        const notice = $('.editor-video-status',card);
+        video.addEventListener('error',() => {
+          notice.hidden = false;
+          notice.textContent = 'Preglednik ne može reproducirati ovaj video. To ne sprječava prijenos; za prikaz na webu preporučuje se MP4 (H.264/AAC).';
+        },{once:true});
+      }
       card.querySelectorAll('[data-field]').forEach(input => {
         const field = input.dataset.field;
         if (input.type === 'checkbox') input.checked = project[field];
@@ -153,7 +174,7 @@
     if (!field || !project || conflict) return;
     if (field === 'featured' && e.target.checked && projects.filter(p => p.featured).length >= 5) {
       e.target.checked = false;
-      $('#upload-status').textContent = 'Na naslovnoj može biti najviše pet radova. Najprije odznači neki od postojećih.';
+      uploadStatus('Na naslovnoj može biti najviše pet radova. Najprije odznači neki od postojećih.');
       return;
     }
     project[field] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -192,6 +213,7 @@
     if (action === 'delete') {
       if (!confirm(`Ukloniti rad „${project.name}” s weba?`)) return;
       project.photos.forEach(photo => revoke(photo.preview));
+      revoke(project.videoPreview);
       projects.splice(index,1);
     } else {
       const target = index + (action === 'up' ? -1 : 1);
@@ -207,7 +229,7 @@
   let dragging = null;
   list.addEventListener('dragstart',e => {
     const project = projectFor(e.target);
-    if (!project || conflict || e.target.closest('input,textarea,select,button,label')) { e.preventDefault(); return; }
+    if (!project || conflict || e.target.closest('input,textarea,select,button,label,video')) { e.preventDefault(); return; }
     dragging = project.id;
     e.dataTransfer.setData('text/plain',project.id);
     e.dataTransfer.effectAllowed = 'move';
@@ -245,13 +267,18 @@
     if (!file.size) throw new Error(`Datoteka „${file.name}” je prazna.`);
   }
   function attachFile(project,file) {
-    // Some browsers report MOV files with no MIME type or as generic binary.
-    if (/\.mov$/i.test(file.name) && ['', 'application/octet-stream', 'video/x-quicktime'].includes(file.type)) {
-      file = new File([file],file.name,{type:'video/quicktime',lastModified:file.lastModified});
+    // Cameras and browsers may omit a MIME type or use a container alias.
+    const extension = file.name.split('.').pop().toLowerCase();
+    const videoTypes = {mp4:'video/mp4',webm:'video/webm',mov:'video/quicktime'};
+    if (videoTypes[extension] && ['', 'application/octet-stream', 'video/x-quicktime', 'video/x-m4v', 'application/mp4'].includes(file.type)) {
+      file = new File([file],file.name,{type:videoTypes[extension],lastModified:file.lastModified});
     }
     validateFile(file);
     if (file.type.startsWith('video/')) {
       project.pendingVideo = file;
+      revoke(project.videoPreview);
+      project.videoPreview = URL.createObjectURL(file);
+      previews.add(project.videoPreview);
       project.cat = 'video';
       project.art = 'city';
     } else {
@@ -277,7 +304,7 @@
         added++;
       } catch (error) { errors.push(error.message); }
     }
-    $('#upload-status').textContent = errors.join(' ');
+    uploadStatus(errors.join(' '));
     if (added) { changed(); render(); }
   }
   function addFiles(files) {
@@ -294,7 +321,7 @@
         added++;
       } catch (error) { errors.push(error.message); }
     }
-    $('#upload-status').textContent = errors.join(' ');
+    uploadStatus(errors.join(' '));
     if (added) { changed(); render(); }
   }
   list.addEventListener('change',e => {
@@ -308,15 +335,18 @@
     const project = projectFor(e.target);
     const file = e.target.files[0];
     if (!project || !file) return;
-    try { attachFile(project,file); changed(); render(); $('#upload-status').textContent = ''; }
-    catch (error) { $('#upload-status').textContent = error.message; }
+    try { attachFile(project,file); changed(); render(); uploadStatus(''); }
+    catch (error) { uploadStatus(error.message); }
   });
   const dropzone = $('#dropzone');
   dropzone.addEventListener('click',() => { if (!conflict) $('#files').click(); });
   dropzone.addEventListener('keydown',e => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!conflict) $('#files').click(); }
   });
-  $('#files').addEventListener('change',e => { addFiles(e.target.files); e.target.value = ''; });
+  $('#add-video').addEventListener('click',() => { if (session && !conflict) $('#video-files').click(); });
+  for (const selector of ['#files','#video-files']) {
+    $(selector).addEventListener('change',e => { addFiles(e.target.files); e.target.value = ''; });
+  }
   document.addEventListener('dragover',e => {
     if (session && e.dataTransfer.types.includes('Files')) { e.preventDefault(); dropzone.classList.add('is-over'); }
   });
@@ -455,6 +485,8 @@
       $('#conflict').hidden = true;
       list.inert = false;
       $('#files').disabled = false;
+      $('#video-files').disabled = false;
+      $('#add-video').disabled = false;
       dropzone.removeAttribute('aria-disabled');
       render();
       status('Učitana je aktualna verzija radova.');
@@ -481,6 +513,8 @@
       $('#conflict').hidden = true;
       list.inert = false;
       $('#files').disabled = false;
+      $('#video-files').disabled = false;
+      $('#add-video').disabled = false;
       dropzone.removeAttribute('aria-disabled');
       e.target.reset();
       $('#login-view').hidden = true;

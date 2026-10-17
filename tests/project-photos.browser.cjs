@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAIAAADZF8uwAAAAF0lEQVR4nGOsCFjAQAgwEVQxqmgAFAEAhBIBgHuVj+EAAAAASUVORK5CYII=', 'base64');
+const sampleVideo = fs.readFileSync(path.join(__dirname,'fixtures/video.mp4'));
 const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:8000';
 const fixture = name => ({ name, mimeType:'image/png', buffer:png });
 (async () => {
@@ -25,7 +26,9 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
       const json = data => route.fulfill({contentType:'application/json', body:JSON.stringify(data)});
       if (url.pathname === '/auth/v1/token') return json({access_token:'test-only',refresh_token:'test-only',expires_in:3600,user:{id:'test-owner'}});
       if (url.pathname === '/rest/v1/rpc/is_portfolio_owner') return json(true);
-      if (url.pathname.startsWith('/storage/v1/object/public/')) return route.fulfill({contentType:'image/png',body:png});
+      if (url.pathname.startsWith('/storage/v1/object/public/')) return url.pathname.endsWith('.mp4') ? route.fulfill({contentType:'video/mp4',body:sampleVideo}) : route.fulfill({contentType:'image/png',body:png});
+      if (url.pathname.endsWith('/reject-size')) return route.fulfill({status:413,contentType:'application/json',body:JSON.stringify({message:'The object exceeded the maximum allowed size'})});
+      if (url.pathname.endsWith('/reject-type')) return route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({message:'mime type video/quicktime is not supported'})});
       if (url.pathname.startsWith('/storage/v1/object/')) {
         if (failUpload) { failUpload = false; return route.fulfill({status:500,body:'{}'}); }
         if (url.pathname.endsWith('.mov')) assert.equal(request.headers()['content-type'],'video/quicktime');
@@ -199,6 +202,37 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
     await save();
     assert.equal(doc.projects.at(-1).cat,'video');
     console.log('PASS: client accepts exactly 150 MB and rejects larger files (simulated sizes)');
+
+    for (const mimeType of ['video/mp4','application/octet-stream','','application/mp4','video/x-m4v']) {
+      const choosing = studio.waitForEvent('filechooser');
+      await studio.click('#add-video');
+      const chooser = await choosing;
+      await chooser.setFiles({name:'camera.MP4',mimeType,buffer:sampleVideo});
+      const videoCard = studio.locator('.editor-card').last();
+      await videoCard.locator('video').waitFor({state:'visible'});
+      await studio.waitForFunction(() => [...document.querySelectorAll('.editor-card')].at(-1).querySelector('video').readyState >= 2);
+      await videoCard.locator('video').evaluate(async video => {video.muted=true;await video.play();});
+      await studio.waitForFunction(() => [...document.querySelectorAll('.editor-card')].at(-1).querySelector('video').currentTime > 0);
+      await videoCard.locator('video').evaluate(video => video.pause());
+      await save();
+      assert(doc.projects.at(-1).video.endsWith('.mp4'));
+    }
+    await login();
+    await studio.waitForFunction(() => [...document.querySelectorAll('.editor-card')].at(-1).querySelector('video').readyState >= 2);
+    assert((await studio.locator('.editor-card').last().locator('video').getAttribute('src')).startsWith('https://'));
+    console.log('PASS: genuine H.264 MP4 previews and plays locally and after saved reload; missing/alias MIME types accepted');
+    const storageErrors = await studio.evaluate(async () => {
+      const config=LeoPortfolio.getConfig();
+      const result=[];
+      for(const path of ['reject-size','reject-type']) {
+        try {await LeoPortfolio.request(`${config.url}/storage/v1/object/portfolio-media/${path}`,{method:'POST',body:'test'});}
+        catch(error){result.push({status:error.status,message:error.message});}
+      }
+      return result;
+    });
+    assert.equal(storageErrors[0].status,413);assert.match(storageErrors[0].message,/150 MB/);
+    assert.match(storageErrors[1].message,/video\/quicktime/);
+    console.log('PASS: storage size/type rejection is reported with actionable messages');
 
     for (const mimeType of ['video/quicktime','application/octet-stream','']) {
       await studio.locator('#files').setInputFiles({name:'camera.MOV',mimeType,buffer:Buffer.from('mock MOV upload')});
