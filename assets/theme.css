@@ -126,7 +126,8 @@ input::placeholder, textarea::placeholder { color: #ffffffb0; }
 .site-footer, .page-links { background: #06030824; }
 dialog { background: var(--bg); border-color: #ffffff55; }
 dialog::backdrop { background: #040206eb; }
-.dialog-media, .dialog-media video { background: #0d0813; }
+.dialog-media, .dialog-media video { background: transparent; }
+.dialog-media .media-image { opacity: 1; transition: none; }
 .shutter polygon { fill: var(--bg); stroke: rgb(255 255 255 / .08); }
 .shutter-caption { color: #ffffffb8; }
 .skip-intro { background: #09050db8; border-color: #ffffff70; }

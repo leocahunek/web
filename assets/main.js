@@ -320,7 +320,7 @@
     const content = $('#lightbox-content');
     content.innerHTML = p.video
       ? `<div class="dialog-media"><video controls autoplay playsinline aria-label="${esc(p.name)}" src="${esc(p.video)}" ${p.image ? `poster="${esc(imageURL(p,1600))}"` : ''}></video></div><p class="video-status" role="status"></p>`
-      : `<div class="dialog-media">${artHTML(p)}<img class="media-image" src="${esc(imageURL(selectedImage,1600))}" alt="${esc(p.name)}${p.images.length > 1 ? ` — fotografija ${photoIndex + 1} od ${p.images.length}` : ''}"></div>`;
+      : `<div class="dialog-media"><img class="media-image" src="${esc(imageURL(selectedImage,1600))}" alt="${esc(p.name)}${p.images.length > 1 ? ` — fotografija ${photoIndex + 1} od ${p.images.length}` : ''}"></div>`;
     $('.photo-navigation').hidden = !!p.video || p.images.length < 2;
     $('#photo-counter').textContent = `Fotografija ${photoIndex + 1} / ${p.images.length}`;
     watchImages(content);
