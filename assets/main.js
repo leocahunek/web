@@ -272,7 +272,7 @@
     figure.dataset.category = p.cat;
     figure.dataset.reveal = '';
     figure.style.setProperty('--reveal-delay', `${(i % 2) * 100}ms`);
-    figure.innerHTML = `<button type="button" class="project-media" aria-label="Otvori ${esc(p.name)}">${artHTML(p)}${imageHTML(p)}<span class="project-tag" aria-hidden="true">${categories[p.cat]}</span>${p.video ? '<span class="play" aria-hidden="true"><span><svg class="ui-icon play-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m8 5 11 7-11 7Z"/></svg></span></span>' : ''}<span class="project-open" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></button><figcaption><div><h3>${esc(p.name)}</h3><p>${esc(p.sub)}</p></div><span class="project-number" aria-hidden="true">/${p.year}</span></figcaption>`;
+    figure.innerHTML = `<button type="button" class="project-media" aria-label="Otvori ${esc(p.name)}">${artHTML(p)}${imageHTML(p)}<span class="project-tag" aria-hidden="true">${categories[p.cat]}${!p.video && p.images.length > 1 ? ` · ${p.images.length} fotografija` : ''}</span>${p.video ? '<span class="play" aria-hidden="true"><span><svg class="ui-icon play-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m8 5 11 7-11 7Z"/></svg></span></span>' : ''}<span class="project-open" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></button><figcaption><div><h3>${esc(p.name)}</h3><p>${esc(p.sub)}</p></div><span class="project-number" aria-hidden="true">/${p.year}</span></figcaption>`;
     figure.hidden = activeFilter !== 'all' && activeFilter !== p.cat;
     $('.project-media', figure).addEventListener('click', () => openProject(i));
     gallery.append(figure);
@@ -309,22 +309,29 @@
 
   const dialog = $('#lightbox');
   let openIndex = 0;
+  let photoIndex = 0;
   function renderLightbox() {
     const p = projects[openIndex];
+    photoIndex = Math.max(0,Math.min(photoIndex,p.images.length - 1));
+    const selectedImage = {...p,image:p.images[photoIndex] || p.image};
     $('.dialog-category').textContent = `${p.year} / ${categories[p.cat]}`;
     $('#lightbox-title').textContent = p.name;
     $('#lightbox-description').textContent = p.description || p.sub;
     const content = $('#lightbox-content');
     content.innerHTML = p.video
       ? `<div class="dialog-media"><video controls autoplay playsinline aria-label="${esc(p.name)}" src="${esc(p.video)}" ${p.image ? `poster="${esc(imageURL(p,1600))}"` : ''}></video></div><p class="video-status" role="status"></p>`
-      : `<div class="dialog-media">${artHTML(p)}<img class="media-image" src="${esc(imageURL(p,1600))}" alt="${esc(p.sub)}"></div>`;
+      : `<div class="dialog-media">${artHTML(p)}<img class="media-image" src="${esc(imageURL(selectedImage,1600))}" alt="${esc(p.name)}${p.images.length > 1 ? ` — fotografija ${photoIndex + 1} od ${p.images.length}` : ''}"></div>`;
+    $('.photo-navigation').hidden = !!p.video || p.images.length < 2;
+    $('#photo-counter').textContent = `Fotografija ${photoIndex + 1} / ${p.images.length}`;
     watchImages(content);
     const video = $('video', content);
-    if (video) video.addEventListener('error', () => { $('.video-status', content).textContent = 'Video trenutačno nije dostupan. Možeš nastaviti pregledavati ostale radove.'; }, { once: true });
+    const videoStatus = $('.video-status', content);
+    if (video) video.addEventListener('error', () => { videoStatus.textContent = 'Video trenutačno nije dostupan. Možeš nastaviti pregledavati ostale radove.'; }, { once: true });
   }
   function openProject(index) {
     if (!dialog || !projects[index]) return;
     openIndex = index;
+    photoIndex = 0;
     renderLightbox();
     dialog.showModal();
     document.body.classList.add('modal-open');
@@ -332,16 +339,43 @@
   }
   function stepLightbox(direction) {
     openIndex = (openIndex + direction + projects.length) % projects.length;
+    photoIndex = 0;
     renderLightbox();
   }
+  function stepPhoto(direction) {
+    const p = projects[openIndex];
+    if (!p || p.video || p.images.length < 2) return;
+    photoIndex = (photoIndex + direction + p.images.length) % p.images.length;
+    renderLightbox();
+  }
+  $('#photo-prev')?.addEventListener('click',() => stepPhoto(-1));
+  $('#photo-next')?.addEventListener('click',() => stepPhoto(1));
   $('.dialog-close')?.addEventListener('click', () => dialog.close());
   $('#lightbox-prev')?.addEventListener('click', () => stepLightbox(-1));
   $('#lightbox-next')?.addEventListener('click', () => stepLightbox(1));
   dialog?.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
   dialog?.addEventListener('keydown', e => {
     if (e.target.closest('video')) return;
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); stepLightbox(e.key === 'ArrowLeft' ? -1 : 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      const direction = e.key === 'ArrowLeft' ? -1 : 1;
+      const p = projects[openIndex];
+      if (!p.video && p.images.length > 1) stepPhoto(direction);
+      else stepLightbox(direction);
+    }
   });
+  let touchStart = null;
+  $('#lightbox-content')?.addEventListener('touchstart',e => {
+    touchStart = e.touches.length === 1 ? {x:e.touches[0].clientX,y:e.touches[0].clientY} : null;
+  },{passive:true});
+  $('#lightbox-content')?.addEventListener('touchend',e => {
+    if (!touchStart || e.touches.length || !e.changedTouches.length) { touchStart = null; return; }
+    const dx = e.changedTouches[0].clientX - touchStart.x;
+    const dy = e.changedTouches[0].clientY - touchStart.y;
+    touchStart = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) stepPhoto(dx > 0 ? -1 : 1);
+  },{passive:true});
+  $('#lightbox-content')?.addEventListener('touchcancel',() => { touchStart = null; });
   dialog?.addEventListener('close', () => {
     $('#lightbox-content').replaceChildren();
     document.body.classList.remove('modal-open');

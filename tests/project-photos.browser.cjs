@@ -1,0 +1,192 @@
+// Requires Playwright and Chromium; run against the documented local HTTP server.
+// node tests/project-photos.browser.cjs
+const { chromium } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAIAAADZF8uwAAAAF0lEQVR4nGOsCFjAQAgwEVQxqmgAFAEAhBIBgHuVj+EAAAAASUVORK5CYII=', 'base64');
+const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:8000';
+const fixture = name => ({ name, mimeType:'image/png', buffer:png });
+(async () => {
+  const browser = await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium', headless:true, args:['--no-sandbox']});
+  try {
+    const context = await browser.newContext({reducedMotion:'reduce'});
+    context.setDefaultTimeout(15000);
+    const errors = [];
+    context.on('page', page => page.on('pageerror', error => errors.push(error.message)));
+    let doc = {projects:JSON.parse(fs.readFileSync(path.join(__dirname,'../data/portfolio.json'),'utf8')).projects, revision:1};
+    let uploads = 0;
+    let failUpload = false;
+    let holdUpload;
+    await context.route('https://images.unsplash.com/**', route => route.fulfill({contentType:'image/png', body:png}));
+    await context.route('https://*.supabase.co/**', async route => {
+      const request = route.request();
+      const url = new URL(request.url());
+      const json = data => route.fulfill({contentType:'application/json', body:JSON.stringify(data)});
+      if (url.pathname === '/auth/v1/token') return json({access_token:'test-only',refresh_token:'test-only',expires_in:3600,user:{id:'test-owner'}});
+      if (url.pathname === '/rest/v1/rpc/is_portfolio_owner') return json(true);
+      if (url.pathname.startsWith('/storage/v1/object/public/')) return route.fulfill({contentType:'image/png',body:png});
+      if (url.pathname.startsWith('/storage/v1/object/')) {
+        if (failUpload) { failUpload = false; return route.fulfill({status:500,body:'{}'}); }
+        uploads++;
+        if (holdUpload) await holdUpload();
+        return json({Key:'uploaded'});
+      }
+      if (url.pathname === '/rest/v1/portfolio') {
+        if (request.method() === 'PATCH') {
+          if (url.searchParams.get('revision') !== `eq.${doc.revision}`) return json([]);
+          doc = {projects:request.postDataJSON().projects,revision:doc.revision + 1};
+          return json([{revision:doc.revision}]);
+        }
+        return json([doc]);
+      }
+      if (url.pathname === '/auth/v1/logout') return json({});
+      throw new Error(`Unhandled mock request: ${request.method()} ${url.pathname}`);
+    });
+    const studio = await context.newPage();
+    studio.on('dialog', dialog => dialog.accept());
+    const login = async () => {
+      await studio.goto(`${base}/studio/`);
+      await studio.locator('#login-form').waitFor({state:'visible'});
+      await studio.fill('[name=email]', 'owner@example.com');
+      await studio.fill('[name=password]', 'mock-password');
+      await studio.click('#login-button');
+      await studio.locator('#workspace').waitFor({state:'visible'});
+    };
+    await login();
+    const card = studio.locator('.editor-card').first();
+    const save = async () => {
+      await studio.locator('#save').evaluate(button => button.click());
+      await studio.waitForFunction(() => { const el = document.querySelector('#save-status'); return el.textContent === 'Sve promjene spremljene i objavljene.' || el.dataset.error === 'true'; }, null, {timeout:15000});
+      assert.equal(await studio.locator('#save-status').getAttribute('data-error'), 'false', await studio.locator('#save-status').innerText());
+    };
+    assert.equal(await card.locator('.photo-item').count(), 1);
+    await card.locator('[data-add-photos]').setInputFiles([fixture('two.png'), fixture('three.png')]);
+    assert.equal(await card.locator('.photo-item').count(), 3);
+    await save();
+    assert.equal(doc.projects[0].images.length, 3);
+    assert.equal(doc.projects[0].image, doc.projects[0].images[0]);
+    assert.equal(uploads, 2);
+    assert(!JSON.stringify(doc).includes('blob:'));
+    assert(!JSON.stringify(doc).includes('pending'));
+    console.log('PASS: append multiple photos, prepare/upload, save one project with three photos');
+
+    const cover = doc.projects[0].images[2];
+    await card.locator('[data-photo-action=cover]').nth(2).click();
+    await save();
+    assert.equal(doc.projects[0].image, cover);
+    const order = [...doc.projects[0].images];
+    await card.locator('[data-photo-action=down]').first().click();
+    await save();
+    assert.deepEqual(doc.projects[0].images, [order[1],order[0],order[2]]);
+    await card.locator('[data-photo-action=up]').nth(1).click();
+    await save();
+    assert.deepEqual(doc.projects[0].images, order);
+    await login();
+    assert.equal(await card.locator('.photo-item').count(), 3);
+    assert.equal(await card.locator('.editor-cover img').getAttribute('src'), cover);
+    console.log('PASS: cover, ordering, and persistence after reloading Studio');
+
+    const gallery = await context.newPage();
+    await gallery.goto(`${base}/radovi.html`);
+    await gallery.waitForFunction(() => document.querySelectorAll('.project').length === 6);
+    assert.match(await gallery.locator('.project-tag').first().innerText(), /3 fotografija/);
+    await gallery.locator('.project-media').first().click();
+    assert.equal(await gallery.locator('#photo-counter').innerText(),'Fotografija 1 / 3');
+    await gallery.click('#photo-next');
+    assert.equal(await gallery.locator('#photo-counter').innerText(),'Fotografija 2 / 3');
+    assert.equal((await gallery.locator('#lightbox-content img').getAttribute('src')).split('?')[0],doc.projects[0].images[1]);
+    await gallery.keyboard.press('ArrowRight');
+    assert.equal(await gallery.locator('#photo-counter').innerText(),'Fotografija 3 / 3');
+    await gallery.keyboard.press('ArrowRight');
+    assert.equal(await gallery.locator('#photo-counter').innerText(),'Fotografija 1 / 3');
+    await gallery.click('#lightbox-next');
+    assert.equal(await gallery.locator('.photo-navigation').isVisible(),false);
+    assert.equal(await gallery.locator('#lightbox-content video').count(),1);
+    await gallery.click('#lightbox-prev');
+    assert.equal(await gallery.locator('#photo-counter').innerText(),'Fotografija 1 / 3');
+    await gallery.locator('#lightbox-content').evaluate(el => {
+      const start = new Touch({identifier:1,target:el,clientX:250,clientY:100});
+      const end = new Touch({identifier:1,target:el,clientX:80,clientY:110});
+      el.dispatchEvent(new TouchEvent('touchstart',{touches:[start],bubbles:true}));
+      el.dispatchEvent(new TouchEvent('touchend',{touches:[],changedTouches:[end],bubbles:true}));
+    });
+    assert.equal(await gallery.locator('#photo-counter').innerText(),'Fotografija 2 / 3');
+    await gallery.keyboard.press('Escape');
+    for (const width of [320,390,768,1440]) {
+      await gallery.setViewportSize({width,height:900});
+      await studio.setViewportSize({width,height:900});
+      assert(await gallery.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `gallery overflow at ${width}`);
+      assert(await studio.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `studio overflow at ${width}`);
+    }
+    console.log('PASS: public gallery, photo arrows/keyboard/swipe, project navigation, video, responsive layouts');
+
+    await card.locator('[data-add-photos]').setInputFiles({name:'bad.mp4',mimeType:'video/mp4',buffer:Buffer.from('invalid')});
+    assert.equal(await card.locator('.photo-item').count(),3);
+    assert.match(await studio.locator('#upload-status').innerText(),/samo fotografije/);
+    failUpload = true;
+    await card.locator('[data-add-photos]').setInputFiles(fixture('retry.png'));
+    await studio.waitForFunction(() => document.querySelector('#save-status').dataset.error === 'true');
+    assert.equal(doc.projects[0].images.length,3);
+    await save();
+    assert.equal(doc.projects[0].images.length,4);
+    console.log('PASS: invalid format rejected; failed upload can be retried without losing photos');
+
+    let release;
+    const gate = new Promise(resolve => { release = resolve; });
+    let started;
+    const startedPromise = new Promise(resolve => { started = resolve; });
+    holdUpload = async () => { started(); await gate; };
+    const uploadsBefore = uploads;
+    await card.locator('[data-add-photos]').setInputFiles(fixture('slow.png'));
+    await startedPromise;
+    await card.locator('[data-field=name]').fill('Promjena tijekom prijenosa');
+    holdUpload = null;
+    release();
+    await studio.waitForFunction(() => { const el = document.querySelector('#save-status'); return el.textContent === 'Sve promjene spremljene i objavljene.' || el.dataset.error === 'true'; }, null, {timeout:15000});
+      assert.equal(await studio.locator('#save-status').getAttribute('data-error'), 'false', await studio.locator('#save-status').innerText());
+    assert.equal(doc.projects[0].name,'Promjena tijekom prijenosa');
+    assert.equal(doc.projects[0].images.length,5);
+    assert.equal(uploads,uploadsBefore + 1);
+    console.log('PASS: edits during upload persist and do not upload the same photo twice');
+
+    const oldPhotos = [...doc.projects[0].images];
+    await card.locator('[data-replace]').setInputFiles(fixture('replacement.png'));
+    await save();
+    assert.equal(doc.projects[0].images.length,oldPhotos.length);
+    assert.notEqual(doc.projects[0].image,oldPhotos[0]);
+    assert.deepEqual(doc.projects[0].images.slice(1),oldPhotos.slice(1));
+    const projectCountBeforeDrop = doc.projects.length;
+    await card.evaluate((el,bytes) => {
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([new Uint8Array(bytes)],'dropped.png',{type:'image/png'}));
+      el.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+    },[...png]);
+    await save();
+    assert.equal(doc.projects.length,projectCountBeforeDrop);
+    assert.equal(doc.projects[0].images.length,oldPhotos.length + 1);
+    console.log('PASS: replace only the cover; drop photos onto an existing project');
+
+    while (await card.locator('.photo-item').count() > 1) {
+      await card.locator('[data-photo-action=delete]').last().click();
+    }
+    assert.equal(await card.locator('[data-photo-action=delete]').first().isDisabled(),true);
+    await save();
+    assert.equal(doc.projects[0].images.length,1);
+    const countBefore = doc.projects.length;
+    await studio.locator('#files').setInputFiles(fixture('new-project.png'));
+    await save();
+    assert.equal(doc.projects.length,countBefore + 1);
+    assert.equal(doc.projects.at(-1).images.length,1);
+    console.log('PASS: remove individual photos, protect last photo, and create new projects');
+
+    // A stale editor must retain conflict protection for galleries as well.
+    await card.locator('[data-field=sub]').fill('Concurrent change test');
+    doc.revision++;
+    await studio.locator('#save').evaluate(button => button.click());
+    await studio.locator('#conflict').waitFor({state:'visible'});
+    assert.equal(await studio.locator('#save').isDisabled(),true);
+    assert.deepEqual(errors,[]);
+    console.log('PASS: revision conflict protection; no browser JavaScript errors');
+  } finally { await browser.close(); }
+})().catch(error => {console.error(error);process.exitCode=1;});

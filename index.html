@@ -10,10 +10,10 @@
   <link rel="icon" href="assets/camera-cursor.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/style.css?v=midnight-1">
   <link rel="preload" href="assets/fonts/marcellus-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="assets/theme.css?v=green-light-1">
+  <link rel="stylesheet" href="assets/theme.css?v=project-photos-1">
   <link rel="stylesheet" href="assets/home.css?v=studio-1">
-  <script src="assets/portfolio-store.js?v=studio-1" defer></script>
-  <script src="assets/main.js?v=studio-1" defer></script>
+  <script src="assets/portfolio-store.js?v=project-photos-1" defer></script>
+  <script src="assets/main.js?v=project-photos-1" defer></script>
 </head>
 <body data-page="home">
   <a class="skip-link" href="#main">Preskoči na sadržaj</a>
@@ -65,6 +65,7 @@
     <div class="dialog-shell">
       <div class="dialog-toolbar"><span class="dialog-category"></span><button class="dialog-close" type="button" aria-label="Zatvori pregled">Zatvori <span aria-hidden="true">×</span></button></div>
       <div id="lightbox-content"></div>
+      <div class="photo-navigation" hidden><button type="button" class="round" id="photo-prev" aria-label="Prethodna fotografija">←</button><span id="photo-counter" role="status" aria-live="polite"></span><button type="button" class="round" id="photo-next" aria-label="Sljedeća fotografija">→</button></div>
       <div class="dialog-bottom"><div><h3 id="lightbox-title"></h3><p id="lightbox-description"></p></div><div class="dialog-controls"><button class="round" id="lightbox-prev" type="button" aria-label="Prethodni rad u pregledu">←</button><button class="round" id="lightbox-next" type="button" aria-label="Sljedeći rad u pregledu">→</button></div></div>
     </div>
   </dialog>

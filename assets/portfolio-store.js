@@ -3,6 +3,7 @@
   const base = new URL('../', document.currentScript.src);
   const categories = ['photo', 'video', 'design'];
   const arts = ['portrait', 'city', 'design', 'space', 'travel', 'ritual'];
+  const photoLimit = 100;
   let config = null;
   let current = null;
   let loading = null;
@@ -23,10 +24,12 @@
       ids.add(p.id);
       const name = text(p.name, 120);
       if (!name || !categories.includes(p.cat)) throw new Error('Dodaj naziv i kategoriju svakom radu.');
-      const image = mediaURL(p.image);
+      if (p.images !== undefined && (!Array.isArray(p.images) || p.images.length > photoLimit || p.images.some(url => typeof url !== 'string' || !url))) throw new Error(`Projekt može sadržavati najviše ${photoLimit} fotografija s valjanim adresama.`);
+      const images = p.images?.length ? p.images.map(mediaURL) : p.image ? [mediaURL(p.image)] : [];
+      const image = images[0] || '';
       const video = mediaURL(p.video);
       if (!image && !video) throw new Error('Svakom radu dodaj fotografiju ili video.');
-      return { id:p.id, name, sub:text(p.sub,160), short:text(p.short,60) || name, description:text(p.description,2000), cat:p.cat, art:arts.includes(p.art) ? p.art : p.cat === 'video' ? 'city' : p.cat === 'design' ? 'design' : 'portrait', image, video, featured:p.featured === true, year:String(i + 1).padStart(2,'0') };
+      return { id:p.id, name, sub:text(p.sub,160), short:text(p.short,60) || name, description:text(p.description,2000), cat:p.cat, art:arts.includes(p.art) ? p.art : p.cat === 'video' ? 'city' : p.cat === 'design' ? 'design' : 'portrait', image, images, video, featured:p.featured === true, year:String(i + 1).padStart(2,'0') };
     });
     if (projects.filter(p => p.featured).length > 5) throw new Error('Na naslovnoj odaberi najviše pet radova.');
     return projects;
@@ -122,5 +125,5 @@
     }
     return url.href;
   }
-  window.LeoPortfolio = Object.freeze({ load, subscribe, normalizeProjects, mediaURL, imageURL, escapeHTML, request, getConfig:() => config, readRemote });
+  window.LeoPortfolio = Object.freeze({ load, subscribe, normalizeProjects, mediaURL, imageURL, escapeHTML, request, photoLimit, getConfig:() => config, readRemote });
 })();

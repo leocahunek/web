@@ -38,6 +38,23 @@
   function revoke(url) {
     if (url && previews.delete(url)) URL.revokeObjectURL(url);
   }
+  function editableProjects(value) {
+    return value.map(project => ({...project, photos:project.images.map(url => ({id:crypto.randomUUID(),url}))}));
+  }
+  function renderPhotos(card,project) {
+    $('.project-photos',card).hidden = project.cat !== 'photo';
+    $('.photo-count',card).textContent = `(${project.photos.length})`;
+    const photos = $('.photo-list',card);
+    photos.replaceChildren();
+    project.photos.forEach((photo,index) => {
+      const item = document.createElement('div');
+      item.className = 'photo-item';
+      item.dataset.photoId = photo.id;
+      const esc = portfolio.escapeHTML;
+      item.innerHTML = `<img src="${esc(photo.preview || photo.url)}" alt="Fotografija ${index + 1}" loading="lazy"><span class="photo-position">${index === 0 ? 'Naslovna' : index + 1}</span><div class="photo-actions"><button type="button" data-photo-action="cover" aria-label="Postavi fotografiju ${index + 1} kao naslovnu" ${index === 0 ? 'disabled' : ''}>Naslovna</button><button type="button" data-photo-action="up" aria-label="Pomakni fotografiju ${index + 1} ranije" ${index === 0 ? 'disabled' : ''}>←</button><button type="button" data-photo-action="down" aria-label="Pomakni fotografiju ${index + 1} kasnije" ${index === project.photos.length - 1 ? 'disabled' : ''}>→</button><button type="button" data-photo-action="delete" aria-label="Ukloni fotografiju ${index + 1}" ${project.photos.length === 1 ? 'disabled' : ''}>Ukloni</button></div>`;
+      photos.append(item);
+    });
+  }
   async function headers() {
     if (!session) throw new Error('Prijavi se za upravljanje radovima.');
     if (Date.now() >= session.expiresAt - 60000) {
@@ -64,10 +81,10 @@
       const card = $('#project-template').content.firstElementChild.cloneNode(true);
       card.dataset.id = project.id;
       $('.editor-placeholder',card).textContent = project.short || project.name;
-      const image = $('img',card);
+      const image = $('.editor-cover img',card);
       image.addEventListener('error',() => { image.hidden = true; });
       image.addEventListener('load',() => { image.hidden = false; });
-      const source = project.preview || project.image;
+      const source = project.photos[0]?.preview || project.photos[0]?.url;
       if (source) image.src = source;
       else image.hidden = true;
       $('.video-label',card).hidden = !project.video && !project.pendingVideo;
@@ -78,6 +95,7 @@
       });
       $('[data-action=up]',card).disabled = index === 0;
       $('[data-action=down]',card).disabled = index === projects.length - 1;
+      renderPhotos(card,project);
       list.append(card);
     });
   }
@@ -95,16 +113,41 @@
       return;
     }
     project[field] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    if (field === 'cat') renderPhotos(e.target.closest('.editor-card'),project);
     changed();
   });
   list.addEventListener('click',e => {
+    const photoAction = e.target.closest('[data-photo-action]')?.dataset.photoAction;
+    if (photoAction) {
+      const project = projectFor(e.target);
+      if (!project || conflict) return;
+      const photoId = e.target.closest('[data-photo-id]').dataset.photoId;
+      const index = project.photos.findIndex(photo => photo.id === photoId);
+      if (index < 0) return;
+      if (photoAction === 'delete') {
+        if (project.photos.length === 1 || !confirm('Ukloniti ovu fotografiju iz projekta?')) return;
+        revoke(project.photos[index].preview);
+        project.photos.splice(index,1);
+      } else {
+        const target = photoAction === 'cover' ? 0 : index + (photoAction === 'up' ? -1 : 1);
+        if (target < 0 || target >= project.photos.length || target === index) return;
+        const [photo] = project.photos.splice(index,1);
+        project.photos.splice(target,0,photo);
+      }
+      changed();
+      render();
+      const card = list.querySelector(`[data-id="${project.id}"]`);
+      const focusPhoto = project.photos.find(photo => photo.id === photoId) || project.photos[Math.min(index,project.photos.length - 1)];
+      card.querySelector(`[data-photo-id="${focusPhoto.id}"] button:not(:disabled)`)?.focus();
+      return;
+    }
     const action = e.target.closest('[data-action]')?.dataset.action;
     const project = projectFor(e.target);
     if (!action || !project || conflict) return;
     const index = projects.indexOf(project);
     if (action === 'delete') {
       if (!confirm(`Ukloniti rad „${project.name}” s weba?`)) return;
-      revoke(project.preview);
+      project.photos.forEach(photo => revoke(photo.preview));
       projects.splice(index,1);
     } else {
       const target = index + (action === 'up' ? -1 : 1);
@@ -164,11 +207,30 @@
       project.cat = 'video';
       project.art = 'city';
     } else {
-      revoke(project.preview);
-      project.pendingImage = file;
-      project.preview = URL.createObjectURL(file);
-      previews.add(project.preview);
+      const photo = {id:crypto.randomUUID(),url:'',pending:file,preview:URL.createObjectURL(file)};
+      previews.add(photo.preview);
+      revoke(project.photos[0]?.preview);
+      if (project.photos.length) project.photos[0] = photo;
+      else project.photos.push(photo);
     }
+  }
+  function addProjectPhotos(project,files) {
+    if (!session || conflict || project.cat !== 'photo') return;
+    const errors = [];
+    let added = 0;
+    for (const file of files) {
+      try {
+        validateFile(file);
+        if (!file.type.startsWith('image/')) throw new Error('U fotografski projekt dodaj samo fotografije.');
+        if (project.photos.length >= portfolio.photoLimit) throw new Error(`Projekt može sadržavati najviše ${portfolio.photoLimit} fotografija.`);
+        const photo = {id:crypto.randomUUID(),url:'',pending:file,preview:URL.createObjectURL(file)};
+        previews.add(photo.preview);
+        project.photos.push(photo);
+        added++;
+      } catch (error) { errors.push(error.message); }
+    }
+    $('#upload-status').textContent = errors.join(' ');
+    if (added) { changed(); render(); }
   }
   function addFiles(files) {
     if (!session || conflict) return;
@@ -178,7 +240,7 @@
       try {
         if (projects.length >= 200) throw new Error('U portfoliju može biti najviše 200 radova.');
         const name = file.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim().slice(0,120) || 'Novi rad';
-        const project = {id:crypto.randomUUID(),name,short:name.slice(0,60),sub:'',description:'',cat:'photo',art:'portrait',image:'',video:'',featured:projects.filter(p => p.featured).length < 5};
+        const project = {id:crypto.randomUUID(),name,short:name.slice(0,60),sub:'',description:'',cat:'photo',art:'portrait',image:'',photos:[],video:'',featured:projects.filter(p => p.featured).length < 5};
         attachFile(project,file);
         projects.push(project);
         added++;
@@ -188,6 +250,12 @@
     if (added) { changed(); render(); }
   }
   list.addEventListener('change',e => {
+    if (e.target.matches('[data-add-photos]')) {
+      const project = projectFor(e.target);
+      if (project) addProjectPhotos(project,e.target.files);
+      e.target.value = '';
+      return;
+    }
     if (!e.target.matches('[data-replace]') || conflict) return;
     const project = projectFor(e.target);
     const file = e.target.files[0];
@@ -209,7 +277,9 @@
     if (!session || !e.dataTransfer.files.length) return;
     e.preventDefault();
     dropzone.classList.remove('is-over');
-    addFiles(e.dataTransfer.files);
+    const project = projectFor(e.target);
+    if (project?.cat === 'photo') addProjectPhotos(project,e.dataTransfer.files);
+    else addFiles(e.dataTransfer.files);
   });
 
   async function prepareImage(file) {
@@ -243,27 +313,41 @@
     saving = true;
     status('Spremam radove…');
     const version = changes;
-    const snapshot = projects.map(p => ({...p}));
+    const snapshot = projects.map(p => ({...p,photos:p.photos.map(photo => ({...photo}))}));
     let successful = false;
     try {
       if (snapshot.some(p => !p.name.trim())) throw new Error('Dodaj naziv svakom radu.');
       for (const project of snapshot) {
-        for (const field of ['image','video']) {
-          const pending = field === 'image' ? 'pendingImage' : 'pendingVideo';
-          if (!project[pending]) continue;
-          status(`Spremam: ${project.name}`);
-          const url = await upload(project,field,project[pending]);
-          project[field] = url;
+        for (const photo of project.photos) {
+          if (!photo.pending) continue;
+          status(`Spremam fotografije: ${project.name}`);
+          photo.url = await upload(project,'image',photo.pending);
           const live = projects.find(p => p.id === project.id);
-          if (live && live[pending] === project[pending]) {
-            live[field] = url;
-            live[pending] = null;
-            if (field === 'image') {
-              revoke(live.preview);
-              live.preview = null;
-              const image = list.querySelector(`[data-id="${live.id}"] img`);
-              if (image) { image.src = url; image.hidden = false; }
+          const livePhoto = live?.photos.find(p => p.id === photo.id);
+          if (livePhoto && livePhoto.pending === photo.pending) {
+            livePhoto.url = photo.url;
+            livePhoto.pending = null;
+            revoke(livePhoto.preview);
+            livePhoto.preview = null;
+            const card = list.querySelector(`[data-id="${live.id}"]`);
+            const thumbnail = card?.querySelector(`[data-photo-id="${photo.id}"] img`);
+            if (thumbnail) thumbnail.src = photo.url;
+            if (live.photos[0] === livePhoto) {
+              const cover = card?.querySelector('.editor-cover img');
+              if (cover) { cover.src = photo.url; cover.hidden = false; }
             }
+          }
+        }
+        project.images = project.photos.map(photo => photo.url);
+        project.image = project.images[0] || '';
+        if (project.pendingVideo) {
+          status(`Spremam: ${project.name}`);
+          const url = await upload(project,'video',project.pendingVideo);
+          project.video = url;
+          const live = projects.find(p => p.id === project.id);
+          if (live && live.pendingVideo === project.pendingVideo) {
+            live.video = url;
+            live.pendingVideo = null;
           }
         }
       }
@@ -299,7 +383,7 @@
     try {
       const doc = await portfolio.readRemote();
       releasePreviews();
-      projects = doc.projects;
+      projects = editableProjects(doc.projects);
       revision = doc.revision;
       changes = savedChanges = 0;
       conflict = false;
@@ -324,7 +408,7 @@
       const owner = await portfolio.request(`${config.url}/rest/v1/rpc/is_portfolio_owner`, {method:'POST',headers:{...await headers(),'Content-Type':'application/json'},body:'{}'});
       if (owner !== true) throw new Error('Ovaj račun nema pristup studiju.');
       const doc = await portfolio.readRemote();
-      projects = doc.projects;
+      projects = editableProjects(doc.projects);
       revision = doc.revision;
       changes = savedChanges = 0;
       conflict = false;
@@ -343,7 +427,7 @@
         if (!session || saving || doc.revision === revision) return;
         if (dirty()) { showConflict(); return; }
         releasePreviews();
-        projects = doc.projects;
+        projects = editableProjects(doc.projects);
         revision = doc.revision;
         render();
         status('Učitane su nove promjene.');

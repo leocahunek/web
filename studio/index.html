@@ -9,10 +9,10 @@
   <title>Studio — Leo Cahunek</title>
   <link rel="icon" href="../assets/camera-cursor.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../assets/style.css?v=midnight-1">
-  <link rel="stylesheet" href="../assets/theme.css?v=green-light-1">
-  <link rel="stylesheet" href="studio.css?v=studio-1">
-  <script src="../assets/portfolio-store.js?v=studio-1" defer></script>
-  <script src="studio.js?v=studio-1" defer></script>
+  <link rel="stylesheet" href="../assets/theme.css?v=project-photos-1">
+  <link rel="stylesheet" href="studio.css?v=project-photos-1">
+  <script src="../assets/portfolio-store.js?v=project-photos-1" defer></script>
+  <script src="studio.js?v=project-photos-1" defer></script>
 </head>
 <body data-page="admin">
   <header class="studio-header">
@@ -41,7 +41,7 @@
         <span class="drop-icon" aria-hidden="true">＋</span><strong>Povuci radove ovdje.</strong><span>Ili klikni i odaberi datoteke.</span><small>JPG, PNG, WebP, AVIF, GIF, MP4 i WebM · do 40 MB po datoteci</small>
       </div>
       <input id="files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm" hidden>
-      <p class="workspace-help">Povuci kartice za promjenu redoslijeda ili koristi strelice. Odaberi do pet radova za naslovnu. Promjene se spremaju automatski i pojavljuju na javnom webu.</p>
+      <p class="workspace-help">Ovdje dodaješ nove projekte. Više fotografija istog projekta dodaj unutar njegove kartice gumbom „Dodaj fotografije” ili ih povuci na karticu. Povuci kartice za promjenu redoslijeda ili koristi strelice. Odaberi do pet radova za naslovnu. Promjene se spremaju automatski i pojavljuju na javnom webu.</p>
       <p id="upload-status" class="upload-status" role="status" aria-live="polite"></p>
       <div id="project-list" class="project-list" aria-label="Radovi za uređivanje"></div>
       <p id="empty-state" class="empty-state" hidden>Još nema radova. Dodaj prvi povlačenjem datoteke iznad.</p>
@@ -57,6 +57,11 @@
         <div class="editor-columns"><label>Kratki naslov na omotu<input data-field="short" maxlength="60"></label><label>Kategorija<select data-field="cat"><option value="photo">Fotografija</option><option value="video">Video & montaža</option><option value="design">Grafički dizajn</option></select></label></div>
         <label>Podnaslov<input data-field="sub" maxlength="160"></label>
         <label>Opis rada<textarea data-field="description" maxlength="2000" rows="2"></textarea></label>
+        <section class="project-photos" aria-label="Fotografije projekta" hidden>
+          <div class="photos-heading"><strong>Fotografije projekta <span class="photo-count"></span></strong><label class="replace-button">Dodaj fotografije<input type="file" data-add-photos multiple accept="image/jpeg,image/png,image/webp,image/avif,image/gif" hidden></label></div>
+          <p class="photos-help">Prva fotografija je naslovna. Dodaj do 100 fotografija, promijeni njihov redoslijed ili odaberi drugu naslovnu.</p>
+          <div class="photo-list"></div>
+        </section>
         <div class="editor-bottom"><label class="featured-option"><input data-field="featured" type="checkbox">Prikaži na naslovnoj</label><label class="replace-button">Zamijeni datoteku<input type="file" data-replace accept="image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm" hidden></label></div>
       </div>
     </article>

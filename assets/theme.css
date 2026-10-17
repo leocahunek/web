@@ -162,3 +162,5 @@ dialog::backdrop { background: #040206eb; }
 @media(max-width:360px) {
   .hero h1 { font-size: 30px; }
 }
+.photo-navigation { display:flex; justify-content:center; align-items:center; gap:18px; margin-top:16px; }
+#photo-counter { min-width:120px; text-align:center; font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
