@@ -128,7 +128,7 @@
       if (announce) $('#carousel-status').textContent = `${featured[selected].name}. Rad ${selected + 1} od ${total}.`;
     }
     function mayRun() {
-      return total > 1 && !reducedMotion && !userPaused && !focusPaused && !offscreen && !introRunning && !document.hidden && !$('#lightbox').open;
+      return total > 1 && !reducedMotion && !userPaused && !focusPaused && !offscreen && !document.hidden && !$('#lightbox').open;
     }
     function tick(now) {
       frame = null;
@@ -159,7 +159,7 @@
         manualMove = null;
         renderOrbit(true);
       }
-      const blocked = introRunning || document.hidden || $('#lightbox').open || offscreen;
+      const blocked = document.hidden || $('#lightbox').open || offscreen;
       if (!mayRun()) scrollBoost = 0;
       if (blocked || (!manualMove && !mayRun())) {
         if (frame !== null) cancelAnimationFrame(frame);
@@ -439,7 +439,7 @@
     $('.form-status').textContent = 'Upit je pripremljen za preuzimanje. Nije poslan — e-mail adresa studija još nije povezana.';
   });
 
-  // Six physical blades, with the original 650ms pause and 2900ms opening.
+  // Open the blades immediately while the portfolio orbit is already running.
   const shutter = $('.shutter');
   const bladesGroup = $('#aperture-blades');
   const introContent = $$('.site-header, main, .site-footer');
@@ -485,7 +485,7 @@
     drawBlades(0);
     function tick(now) {
       if (introStart === undefined) introStart = now;
-      const progress = Math.max(0, Math.min(1, (now - introStart - 650) / 2900));
+      const progress = Math.max(0, Math.min(1, (now - introStart) / 900));
       drawBlades(progress);
       if (progress < 1) frame = requestAnimationFrame(tick); else finishIntro();
     }

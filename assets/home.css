@@ -93,3 +93,6 @@ html.home-page,
   .home-page .cover-label small { font-size: 6px; }
   .home-page .cover-open { width: 24px; height: 24px; font-size: 14px; }
 }
+
+/* The shutter reveals content that is ready, without a second title intro. */
+.home-page .hero-title-line>span { transform:none; animation:none; }
