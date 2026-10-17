@@ -42,7 +42,7 @@
     return value.map(project => ({...project, photos:project.images.map(url => ({id:crypto.randomUUID(),url}))}));
   }
   function renderPhotos(card,project) {
-    $('.project-photos',card).hidden = project.cat !== 'photo';
+    $('.project-photos',card).hidden = !['photo','travel'].includes(project.cat);
     $('.photo-count',card).textContent = `(${project.photos.length})`;
     const photos = $('.photo-list',card);
     photos.replaceChildren();
@@ -215,7 +215,7 @@
     }
   }
   function addProjectPhotos(project,files) {
-    if (!session || conflict || project.cat !== 'photo') return;
+    if (!session || conflict || !['photo','travel'].includes(project.cat)) return;
     const errors = [];
     let added = 0;
     for (const file of files) {
@@ -278,7 +278,7 @@
     e.preventDefault();
     dropzone.classList.remove('is-over');
     const project = projectFor(e.target);
-    if (project?.cat === 'photo') addProjectPhotos(project,e.dataTransfer.files);
+    if (['photo','travel'].includes(project?.cat)) addProjectPhotos(project,e.dataTransfer.files);
     else addFiles(e.dataTransfer.files);
   });
 

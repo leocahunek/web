@@ -15,7 +15,7 @@ Raspakiraj cijeli ZIP i otvori `index.html` u pregledniku. Zadrži sve HTML dato
 
 Za razvoj s lokalnim serverom pokreni `python3 -m http.server 8000 --bind 0.0.0.0` iz direktorija projekta.
 
-Provjere modela podataka pokreću se s `node --test tests/portfolio-store.test.cjs`. Za funkcionalne provjere pokreni lokalni server i `node tests/project-photos.browser.cjs` u okruženju s Playwrightom i Chromiumom (`CHROMIUM_PATH` može promijeniti putanju preglednika, a `TEST_BASE_URL` adresu servera). Test preglednika koristi izolirani Supabase API mock; ne mijenja stvarne radove i ne zamjenjuje provjeru pravila na stvarnom projektu.
+Provjere modela podataka pokreću se s `node --test tests/portfolio-store.test.cjs`. Za funkcionalne provjere pokreni lokalni server i `node tests/project-photos.browser.cjs` i `node tests/travel-orbit.browser.cjs` u okruženju s Playwrightom i Chromiumom (`CHROMIUM_PATH` može promijeniti putanju preglednika, a `TEST_BASE_URL` adresu servera). Test preglednika koristi izolirani Supabase API mock; ne mijenja stvarne radove i ne zamjenjuje provjeru pravila na stvarnom projektu.
 
 ## Za nastavak u drugom chatu
 Nastavi uređivati priloženi web portfolio za Lea Cahuneka. Sačuvaj tamni elegantni dizajn, responzivnost, uvodno otvaranje blende i listanje radova poput omota ploča.

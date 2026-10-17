@@ -37,3 +37,13 @@ test('photo count is bounded and existing cover can fill an empty photo list', (
   assert.deepEqual(normalize({...legacy, images:[]}).images, [legacy.image]);
   assert.throws(() => normalize({...legacy, image:'', images:[]}));
 });
+
+test('travel photography supports the same ordered photo galleries', () => {
+  const images = [legacy.image, 'https://example.com/travel.jpg'];
+  const project = normalize({...legacy, cat:'travel', images});
+  assert.equal(project.cat,'travel');
+  assert.equal(project.art,'travel');
+  assert.deepEqual(project.images,images);
+  assert.deepEqual(normalize(project),project);
+  assert.throws(() => normalize({...legacy,cat:'unknown'}));
+});

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const base = new URL('../', document.currentScript.src);
-  const categories = ['photo', 'video', 'design'];
+  const categories = ['photo', 'video', 'design', 'travel'];
   const arts = ['portrait', 'city', 'design', 'space', 'travel', 'ritual'];
   const photoLimit = 100;
   let config = null;
@@ -29,7 +29,7 @@
       const image = images[0] || '';
       const video = mediaURL(p.video);
       if (!image && !video) throw new Error('Svakom radu dodaj fotografiju ili video.');
-      return { id:p.id, name, sub:text(p.sub,160), short:text(p.short,60) || name, description:text(p.description,2000), cat:p.cat, art:arts.includes(p.art) ? p.art : p.cat === 'video' ? 'city' : p.cat === 'design' ? 'design' : 'portrait', image, images, video, featured:p.featured === true, year:String(i + 1).padStart(2,'0') };
+      return { id:p.id, name, sub:text(p.sub,160), short:text(p.short,60) || name, description:text(p.description,2000), cat:p.cat, art:arts.includes(p.art) ? p.art : p.cat === 'video' ? 'city' : p.cat === 'design' ? 'design' : p.cat === 'travel' ? 'travel' : 'portrait', image, images, video, featured:p.featured === true, year:String(i + 1).padStart(2,'0') };
     });
     if (projects.filter(p => p.featured).length > 5) throw new Error('Na naslovnoj odaberi najviše pet radova.');
     return projects;

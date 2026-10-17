@@ -91,3 +91,9 @@ html.home-page,
   .home-page .cover-label small { font-size: 6px; }
   .home-page .cover-open { width: 24px; height: 24px; font-size: 14px; }
 }
+
+/* Delayed silhouettes follow the orbit without adding interactive cards. */
+.home-page .cover-trail { pointer-events:none; box-shadow:none; filter:blur(2px); border-color:transparent; }
+@media (prefers-reduced-motion: reduce) {
+  .home-page .cover-trail { display:none !important; }
+}
