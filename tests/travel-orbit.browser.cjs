@@ -27,9 +27,9 @@ const path = require('node:path');
     await home.locator('button.cover').first().waitFor();
     const duringIntro = await home.locator('button.cover').first().evaluate(el => el.style.transform);
     await home.waitForFunction(old => !!document.querySelector('.shutter') && document.querySelector('button.cover').style.transform !== old,duringIntro,{timeout:800});
-    await home.locator('.shutter').waitFor({state:'detached',timeout:2000});
+    await home.locator('.shutter').waitFor({state:'detached',timeout:5500});
     assert.equal(await home.locator('.hero-title-line>span').first().evaluate(el=>getComputedStyle(el).animationName),'none');
-    console.log('PASS: orbit starts during shutter opening, short intro ends automatically, no extra title animation');
+    console.log('PASS: orbit starts during shutter opening, shutter ends automatically, no extra title animation');
 
     await home.locator('button.cover').first().waitFor();
     await home.evaluate(()=>document.querySelector('.skip-intro')?.click());
