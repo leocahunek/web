@@ -8,11 +8,11 @@
   <meta name="theme-color" content="#09050d">
   <title>Studio — Leo Cahunek</title>
   <link rel="icon" href="../assets/camera-cursor.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../assets/style.css?v=midnight-1">
-  <link rel="stylesheet" href="../assets/theme.css?v=clean-media-1">
-  <link rel="stylesheet" href="studio.css?v=project-photos-1">
-  <script src="../assets/portfolio-store.js?v=orbit-travel-1" defer></script>
-  <script src="studio.js?v=orbit-travel-1" defer></script>
+  <link rel="stylesheet" href="../assets/style.css?v=about-editor-1">
+  <link rel="stylesheet" href="../assets/theme.css?v=about-editor-1">
+  <link rel="stylesheet" href="studio.css?v=about-editor-1">
+  <script src="../assets/portfolio-store.js?v=about-editor-1" defer></script>
+  <script src="studio.js?v=about-editor-1" defer></script>
 </head>
 <body data-page="admin">
   <header class="studio-header">
@@ -23,7 +23,7 @@
     <section id="login-view" class="login-view" aria-labelledby="login-title">
       <div class="eyebrow muted">Tvoj prostor za radove</div>
       <h1 id="login-title">Dobro došao<br>u studio.</h1>
-      <p class="login-copy">Dodaj fotografije i videozapise, presloži radove i odaberi što se prikazuje na naslovnoj.</p>
+      <p class="login-copy">Uredi radove, tekst i fotografiju stranice O meni te odaberi što se prikazuje na naslovnoj.</p>
       <p id="setup-notice" class="notice" role="status">Provjeravam vezu sa spremištem…</p>
       <form id="login-form" hidden>
         <label>E-mail<input type="email" name="email" autocomplete="username" required maxlength="254"></label>
@@ -35,8 +35,21 @@
     </section>
 
     <section id="workspace" class="workspace" aria-labelledby="workspace-title" hidden>
-      <div class="workspace-heading"><div><div class="eyebrow muted">Portfolio / uređivanje</div><h1 id="workspace-title">Tvoji radovi.</h1></div><div class="save-controls"><span id="save-status" role="status" aria-live="polite">Sve promjene spremljene.</span><button id="save" type="button" class="primary-button" disabled>Spremi odmah ↗</button></div></div>
-      <div id="conflict" class="notice" hidden><p>Radovi su promijenjeni u drugom prozoru. Učitaj aktualnu verziju prije novih izmjena.</p><button id="reload" class="quiet-button" type="button">Učitaj aktualnu verziju</button></div>
+      <div class="workspace-heading"><div><div class="eyebrow muted">Portfolio / uređivanje</div><h1 id="workspace-title">Tvoj web.</h1></div><div class="save-controls"><span id="save-status" role="status" aria-live="polite">Sve promjene spremljene.</span><button id="save" type="button" class="primary-button" disabled>Spremi odmah ↗</button></div></div>
+      <div id="conflict" class="notice" hidden><p>Sadržaj je promijenjen u drugom prozoru. Učitaj aktualnu verziju prije novih izmjena.</p><button id="reload" class="quiet-button" type="button">Učitaj aktualnu verziju</button></div>
+      <details class="about-editor-panel">
+        <summary>O meni — tekst i fotografija</summary>
+        <p id="about-setup-notice" class="notice" hidden>Za aktivaciju uređivanja jednom pokreni <a href="../supabase/about.sql" target="_blank" rel="noopener">ovu SQL skriptu</a> u Supabase SQL Editoru, zatim osvježi Studio. Postojeći radovi ostaju spremljeni.</p>
+        <fieldset id="about-editor" disabled>
+          <legend>Stranica O meni</legend>
+          <div class="about-editor-grid">
+            <div><img id="about-image-preview" alt="Pregled fotografije za stranicu O meni"><label class="replace-button">Odaberi fotografiju<input id="about-image" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" hidden></label><label>Opis fotografije<input data-about="imageAlt" maxlength="300"></label><label>Natpis ispod fotografije<input data-about="imageCaption" maxlength="300"></label><label>Lokacija<input data-about="coordinate" maxlength="120"></label></div>
+            <div><label>Nadnaslov<input data-about="eyebrow" maxlength="120"></label><label>Naslov (svaki red zasebno)<textarea data-about="title" maxlength="300" rows="3"></textarea></label><label>Ime i uloga<input data-about="role" maxlength="160"></label><label>Tekst o meni (prazan red odvaja odlomke)<textarea data-about="body" maxlength="10000" rows="8"></textarea></label><label>Usluge (svaka u zasebnom redu)<textarea data-about="services" rows="4" maxlength="971"></textarea></label><label>Tekst poveznice na kontakt<input data-about="linkText" maxlength="120"></label></div>
+          </div>
+          <p class="workspace-help">Tekst i fotografija spremaju se automatski. Možeš koristiti i gumb „Spremi odmah”.</p>
+        </fieldset>
+      </details>
+      <h2 class="projects-heading">Radovi</h2>
       <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Dodaj fotografije ili videozapise">
         <span class="drop-icon" aria-hidden="true">＋</span><strong>Povuci radove ovdje.</strong><span>Ili klikni i odaberi datoteke.</span><small>JPG, PNG, WebP, AVIF, GIF, MP4 i WebM · do 40 MB po datoteci</small>
       </div>

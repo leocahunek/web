@@ -47,3 +47,14 @@ test('travel photography supports the same ordered photo galleries', () => {
   assert.deepEqual(normalize(project),project);
   assert.throws(() => normalize({...legacy,cat:'unknown'}));
 });
+
+const aboutFixture = JSON.parse(fs.readFileSync(require('node:path').join(__dirname,'../data/about.json'),'utf8'));
+test('about content keeps paragraphs and services and rejects unsafe media', () => {
+  const about = context.window.LeoPortfolio.normalizeAbout(aboutFixture);
+  assert.equal(about.title,aboutFixture.title);
+  assert.equal(about.body,aboutFixture.body);
+  assert.equal(about.services.length,4);
+  assert.throws(() => context.window.LeoPortfolio.normalizeAbout({...aboutFixture,image:'javascript:alert(1)'}));
+  assert.throws(() => context.window.LeoPortfolio.normalizeAbout({...aboutFixture,title:''}));
+  assert.throws(() => context.window.LeoPortfolio.normalizeAbout({...aboutFixture,services:Array(13).fill('service')}));
+});

@@ -31,6 +31,7 @@ grant execute on function public.is_portfolio_owner() to authenticated;
 
 create table if not exists public.portfolio (
   id text primary key check (id = 'main'),
+  about jsonb,
   projects jsonb not null default '[]'::jsonb check (jsonb_typeof(projects) = 'array' and jsonb_array_length(projects) <= 200),
   revision bigint not null default 0 check (revision >= 0),
   updated_at timestamptz not null default now()
@@ -38,6 +39,8 @@ create table if not exists public.portfolio (
 alter table public.portfolio enable row level security;
 revoke all on public.portfolio from public, anon, authenticated;
 grant select on public.portfolio to anon, authenticated;
+alter table public.portfolio add column if not exists about jsonb;
+grant update (about) on public.portfolio to authenticated;
 grant update (projects) on public.portfolio to authenticated;
 
 drop policy if exists "Read published portfolio" on public.portfolio;

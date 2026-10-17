@@ -87,3 +87,14 @@ h1 { font-size:clamp(40px,5vw,68px); font-weight:400; line-height:1.05; letter-s
   .editor-bottom { align-items:start; gap:12px; flex-wrap:wrap; }
   .drag-label { font-size:9px; }
 }
+
+.about-editor-panel { margin:0 0 35px; border:1px solid var(--line); border-radius:12px; padding:20px; background:#140d1cb8; }
+.about-editor-panel summary { cursor:pointer; font-size:20px; }
+#about-editor { border:0; padding:25px 0 0; margin:0; min-width:0; }
+#about-editor legend { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+#about-editor:disabled { opacity:.55; }
+.about-editor-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr); gap:25px; }
+#about-image-preview { width:100%; max-height:350px; object-fit:contain; margin-bottom:20px; }
+.projects-heading { font-size:28px; font-weight:400; }
+#about-setup-notice a { text-decoration:underline; }
+@media(max-width:650px) { .about-editor-grid { grid-template-columns:1fr; } }

@@ -79,22 +79,6 @@
       covers.append(button);
     });
     const cards = [...covers.children];
-    const trailHistory = [];
-    const trails = featured.map(p => [0,1,2].map(() => {
-      const ghost = document.createElement('div');
-      ghost.className = 'cover cover-trail';
-      ghost.setAttribute('aria-hidden','true');
-      ghost.inert = true;
-      ghost.hidden = true;
-      ghost.innerHTML = `${artHTML(p)}${imageHTML(p)}`;
-      covers.append(ghost);
-      return ghost;
-    }));
-    function clearTrails() {
-      trailHistory.length = 0;
-      trails.flat().forEach(ghost => { ghost.hidden = true; });
-    }
-
 
     function measureOrbit() {
       const width = covers.clientWidth;
@@ -107,18 +91,6 @@
       renderOrbit();
     }
     function renderOrbit(announce = false) {
-      const now = performance.now();
-      const showTrails = !reducedMotion && (manualMove || mayRun());
-      if (showTrails) {
-        if (!trailHistory.length || now - trailHistory[trailHistory.length - 1].time >= 20) trailHistory.push({time:now,position});
-        while (trailHistory.length > 1 && trailHistory[0].time < now - 360) trailHistory.shift();
-      } else clearTrails();
-      const delayedPositions = [90,180,270].map(delay => {
-        for (let index = trailHistory.length - 1; index >= 0; index--) {
-          if (trailHistory[index].time <= now - delay) return trailHistory[index].position;
-        }
-        return null;
-      });
       // The front half travels right/up to left/down; the return passes behind it.
       cards.forEach((card, i) => {
         const angle = total === 1 ? Math.PI / 2 : (position - i) * fullTurn / total + Math.PI / 2;
@@ -132,19 +104,7 @@
         card.style.zIndex = String(Math.round(depth * 100));
         card.style.filter = `brightness(${(.38 + depth * .62).toFixed(3)})`;
         card.style.opacity = String((.4 + depth * .6).toFixed(3));
-        trails[i].forEach((ghost,j) => {
-          if (!showTrails) return;
-          const delayedPosition = delayedPositions[j];
-          ghost.hidden = delayedPosition === null;
-          if (delayedPosition === null) return;
-          const trailAngle = (delayedPosition - i) * fullTurn / total + Math.PI / 2;
-          const trailDepth = (Math.sin(trailAngle) + 1) / 2;
-          const tx = Math.cos(trailAngle) * geometry.radiusX;
-          const ty = -Math.cos(trailAngle) * geometry.radiusY + Math.sin(trailAngle) * geometry.depthY;
-          ghost.style.transform = `translate(-50%, -50%) translate3d(${tx}px, ${ty}px, 0) rotateY(${-Math.cos(trailAngle) * 14}deg) rotateZ(${-8 + trailDepth * 5}deg) scale(${.58 + trailDepth * .42})`;
-          ghost.style.zIndex = String(Math.max(0,Math.round(trailDepth * 100) - 4 - j));
-          ghost.style.opacity = String((.17 - j * .045) * (.4 + trailDepth * .6));
-        });
+
       });
       const next = ((Math.round(position) % total) + total) % total;
       if (next !== selected) {
@@ -193,7 +153,6 @@
       const blocked = introRunning || document.hidden || $('#lightbox').open || offscreen;
       if (!mayRun()) scrollBoost = 0;
       if (blocked || (!manualMove && !mayRun())) {
-        clearTrails();
         if (frame !== null) cancelAnimationFrame(frame);
         frame = null;
         previousTime = null;
@@ -547,10 +506,55 @@
       else renderLightbox();
     }
   }
-  if ($('.covers') || gallery) {
+  function applyAbout(about) {
+    if (!$('#about-body')) return;
+    const root = $('#about');
+    $('.eyebrow',root).textContent = about.eyebrow;
+    const heading = $('#about-title');
+    heading.replaceChildren();
+    const lines = about.title.split('\n');
+    lines.forEach((line,index) => {
+      if (index) heading.append(document.createElement('br'));
+      if (index === lines.length - 1) {
+        const emphasis = document.createElement('em');
+        emphasis.textContent = line;
+        heading.append(emphasis);
+      } else heading.append(document.createTextNode(line));
+    });
+    $('.role',root).textContent = about.role;
+    const body = $('#about-body');
+    body.replaceChildren();
+    about.body.split(/\n\s*\n/).filter(text => text.trim()).forEach(text => {
+      const paragraph = document.createElement('p');
+      paragraph.textContent = text;
+      body.append(paragraph);
+    });
+    const services = $('.services',root);
+    services.replaceChildren();
+    about.services.forEach(text => {
+      const span = document.createElement('span');
+      span.textContent = text;
+      services.append(span);
+    });
+    $('#about-link-text').textContent = about.linkText;
+    $('.arrow-link',root).hidden = !about.linkText;
+    const image = $('.portrait img',root);
+    image.alt = about.imageAlt;
+    image.hidden = !about.image;
+    if (about.image && image.getAttribute('src') !== about.image) {
+      image.classList.remove('is-loaded');
+      image.src = about.image;
+      watchImages($('.portrait',root));
+    }
+    $('.portrait small',root).textContent = about.imageCaption;
+    $('.portrait small',root).hidden = !about.imageCaption;
+    $('.portrait-coordinate',root).textContent = about.coordinate;
+  }
+  if ($('.covers') || gallery || $('#about-body')) {
     portfolio.load().then(doc => {
       applyProjects(doc.projects);
-      portfolio.subscribe(next => applyProjects(next.projects));
+      applyAbout(doc.about);
+      portfolio.subscribe(next => { applyProjects(next.projects); applyAbout(next.about); });
     }).catch(() => {
       applyProjects([]);
       const empty = $('.portfolio-empty');

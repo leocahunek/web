@@ -25,3 +25,9 @@ Javna galerija prikazuje jednu karticu po projektu i broj fotografija. U otvoren
 - Posljednja uspješno učitana javna verzija može se spremiti u pregledniku radi oporavka pri prekidu veze. U taj se cache ne spremaju lozinke ni tokeni.
 
 Prije puštanja provjeri i na stvarnom projektu: anoniman PATCH i upload moraju vratiti zabranu, drugi prijavljeni korisnik mora imati zabranu, a vlasnik mora moći dodati rad i vidjeti ga u drugom pregledniku. Lokalni testovi s oponašanjem API-ja ne zamjenjuju ovu provjeru stvarno primijenjenih pravila.
+
+## Uređivanje stranice O meni
+
+Za postojeći Supabase projekt jednom pokreni `supabase/about.sql` u SQL Editoru i osvježi Studio. Skripta dodaje samo polje `about` postojećem retku portfolija i dopušta njegovo ažuriranje prijavljenim korisnicima, uz postojeća pravila koja promjene dopuštaju samo vlasniku. Ne briše radove niti mijenja njihov sadržaj. Nova instalacija putem `setup.sql` već uključuje to polje.
+
+U Studiju otvori „O meni — tekst i fotografija”. Možeš promijeniti naslov i nadnaslov, ime i ulogu, odlomke, usluge, tekst poveznice na kontakt, fotografiju, njezin opis i natpis te lokaciju. Fotografije koriste isto spremište i pripremu kao radovi. Sadržaj se sprema automatski i dijeli istu provjeru revizije s radovima. Bez nadogradnje uređivanje O meni ostaje isključeno uz poveznicu na skriptu; postojeći radovi i javna stranica ostaju dostupni. Zadani sadržaj nalazi se u `data/about.json`, a statični HTML ostaje dostupan i bez JavaScripta. Tekst se prikazuje kao običan tekst, bez HTML umetanja.

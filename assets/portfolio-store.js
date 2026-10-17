@@ -7,6 +7,22 @@
   let config = null;
   let current = null;
   let loading = null;
+  let aboutDefaults = {};
+
+  function normalizeAbout(value) {
+    if (value == null) value = aboutDefaults;
+    if (typeof value !== 'object' || Array.isArray(value)) throw new Error('Neispravan sadržaj stranice O meni.');
+    const text = (key,limit) => {
+      const input = value[key] ?? aboutDefaults[key] ?? '';
+      if (typeof input !== 'string' || input.length > limit) throw new Error('Provjeri duljinu i sadržaj polja O meni.');
+      return input.trim();
+    };
+    const services = value.services ?? aboutDefaults.services ?? [];
+    if (!Array.isArray(services) || services.length > 12 || services.some(item => typeof item !== 'string' || item.length > 80)) throw new Error('Dodaj najviše 12 usluga, svaku do 80 znakova.');
+    const title = text('title',300);
+    if (!title) throw new Error('Dodaj naslov stranice O meni.');
+    return {eyebrow:text('eyebrow',120),title,role:text('role',160),body:text('body',10000),services:services.map(item => item.trim()).filter(Boolean),linkText:text('linkText',120),image:mediaURL(value.image ?? aboutDefaults.image),imageAlt:text('imageAlt',300),imageCaption:text('imageCaption',300),coordinate:text('coordinate',120)};
+  }
 
   function mediaURL(value) {
     if (!value) return '';
@@ -63,7 +79,7 @@
   function readCache() {
     try {
       const saved = JSON.parse(localStorage.getItem('leo-portfolio-cache'));
-      if (saved?.source === config.url) return { projects:normalizeProjects(saved.projects), revision:saved.revision, remote:true };
+      if (saved?.source === config.url) return { projects:normalizeProjects(saved.projects), about:normalizeAbout(saved.about), aboutSupported:saved.aboutSupported === true, revision:saved.revision, remote:true };
     } catch { /* Cached public content is optional. */ }
     return null;
   }
@@ -72,19 +88,27 @@
   }
   async function readRemote() {
     if (!config) return null;
-    const rows = await request(`${config.url}/rest/v1/portfolio?id=eq.main&select=projects,revision`, {headers:{apikey:config.publishableKey}}, 5000);
+    let rows;
+    try {
+      rows = await request(`${config.url}/rest/v1/portfolio?id=eq.main&select=projects,revision,about`, {headers:{apikey:config.publishableKey}}, 5000);
+    } catch (error) {
+      if (error.status !== 400) throw error;
+      rows = await request(`${config.url}/rest/v1/portfolio?id=eq.main&select=projects,revision`, {headers:{apikey:config.publishableKey}}, 5000);
+    }
     if (!Array.isArray(rows) || rows.length !== 1 || !Number.isSafeInteger(rows[0].revision)) throw new Error('Spremište radova nije postavljeno.');
-    return { projects:normalizeProjects(rows[0].projects), revision:rows[0].revision, remote:true };
+    return { projects:normalizeProjects(rows[0].projects), about:normalizeAbout(rows[0].about), aboutSupported:Object.hasOwn(rows[0],'about'), revision:rows[0].revision, remote:true };
   }
   async function load() {
     if (loading) return loading;
     loading = (async () => {
-      const [manifest, settings] = await Promise.all([
+      const [manifest, settings, about] = await Promise.all([
         request(new URL('data/portfolio.json',base)),
-        request(new URL('data/portfolio-config.json',base)).catch(() => null)
+        request(new URL('data/portfolio-config.json',base)).catch(() => null),
+        request(new URL('data/about.json',base))
       ]);
       config = validateConfig(settings);
-      current = {projects:normalizeProjects(manifest.projects), revision:0, remote:false};
+      aboutDefaults = normalizeAbout(about);
+      current = {projects:normalizeProjects(manifest.projects), about:aboutDefaults, aboutSupported:false, revision:0, remote:false};
       if (config) {
         current = readCache() || current;
         try { current = await readRemote(); saveCache(current); } catch { /* Keep the last published content available offline. */ }
@@ -125,5 +149,5 @@
     }
     return url.href;
   }
-  window.LeoPortfolio = Object.freeze({ load, subscribe, normalizeProjects, mediaURL, imageURL, escapeHTML, request, photoLimit, getConfig:() => config, readRemote });
+  window.LeoPortfolio = Object.freeze({ load, subscribe, normalizeProjects, normalizeAbout, mediaURL, imageURL, escapeHTML, request, photoLimit, getConfig:() => config, readRemote });
 })();

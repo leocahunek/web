@@ -5,6 +5,8 @@
   let config;
   let session = null;
   let projects = [];
+  let about = null;
+  let aboutSupported = false;
   let revision = 0;
   let changes = 0;
   let savedChanges = 0;
@@ -41,6 +43,47 @@
   function editableProjects(value) {
     return value.map(project => ({...project, photos:project.images.map(url => ({id:crypto.randomUUID(),url}))}));
   }
+  function renderAbout(doc) {
+    about = {...doc.about,services:[...doc.about.services]};
+    aboutSupported = doc.aboutSupported;
+    $('#about-editor').disabled = !aboutSupported;
+    $('#about-editor').inert = false;
+    $('#about-setup-notice').hidden = aboutSupported;
+    $('#about-editor').querySelectorAll('[data-about]').forEach(input => {
+      input.value = input.dataset.about === 'services' ? about.services.join('\n') : about[input.dataset.about];
+    });
+    updateAboutPreview();
+  }
+  function updateAboutPreview() {
+    const image = $('#about-image-preview');
+    const source = about?.preview || about?.image;
+    image.hidden = !source;
+    if (source) image.src = source;
+  }
+  $('#about-editor').addEventListener('input',e => {
+    const field = e.target.dataset.about;
+    if (!field || !aboutSupported || !session || conflict) return;
+    about[field] = field === 'services' ? e.target.value.split('\n') : e.target.value;
+    changed();
+  });
+  function attachAboutImage(file) {
+    if (!session || !aboutSupported || conflict || !file) return;
+    try {
+      validateFile(file);
+      if (!file.type.startsWith('image/')) throw new Error('Za stranicu O meni odaberi fotografiju.');
+      revoke(about.preview);
+      about.pendingImage = file;
+      about.preview = URL.createObjectURL(file);
+      previews.add(about.preview);
+      updateAboutPreview();
+      changed();
+      $('#upload-status').textContent = '';
+    } catch (error) { $('#upload-status').textContent = error.message; }
+  }
+  $('#about-image').addEventListener('change',e => {
+    attachAboutImage(e.target.files[0]);
+    e.target.value = '';
+  });
   function renderPhotos(card,project) {
     $('.project-photos',card).hidden = !['photo','travel'].includes(project.cat);
     $('.photo-count',card).textContent = `(${project.photos.length})`;
@@ -70,6 +113,7 @@
     clearTimeout(timer);
     $('#conflict').hidden = false;
     list.inert = true;
+    $('#about-editor').inert = true;
     $('#files').disabled = true;
     dropzone.setAttribute('aria-disabled','true');
     status('Pronađena je novija verzija radova.',true);
@@ -277,6 +321,7 @@
     if (!session || !e.dataTransfer.files.length) return;
     e.preventDefault();
     dropzone.classList.remove('is-over');
+    if (e.target.closest('#about-editor')) { attachAboutImage(e.dataTransfer.files[0]); return; }
     const project = projectFor(e.target);
     if (['photo','travel'].includes(project?.cat)) addProjectPhotos(project,e.dataTransfer.files);
     else addFiles(e.dataTransfer.files);
@@ -311,12 +356,25 @@
     clearTimeout(timer);
     if (!session || saving || conflict || !dirty()) return;
     saving = true;
-    status('Spremam radove…');
+    status('Spremam izmjene…');
     const version = changes;
     const snapshot = projects.map(p => ({...p,photos:p.photos.map(photo => ({...photo}))}));
+    const aboutSnapshot = {...about};
     let successful = false;
     try {
+      if (aboutSupported) portfolio.normalizeAbout(aboutSnapshot);
       if (snapshot.some(p => !p.name.trim())) throw new Error('Dodaj naziv svakom radu.');
+      if (aboutSupported && aboutSnapshot.pendingImage) {
+        status('Spremam fotografiju za O meni…');
+        aboutSnapshot.image = await upload({id:'about'},'image',aboutSnapshot.pendingImage);
+        if (about.pendingImage === aboutSnapshot.pendingImage) {
+          about.image = aboutSnapshot.image;
+          about.pendingImage = null;
+          revoke(about.preview);
+          about.preview = null;
+          updateAboutPreview();
+        }
+      }
       for (const project of snapshot) {
         for (const photo of project.photos) {
           if (!photo.pending) continue;
@@ -357,8 +415,10 @@
         return;
       }
       const normalized = portfolio.normalizeProjects(snapshot);
+      const payload = {projects:normalized};
+      if (aboutSupported) payload.about = portfolio.normalizeAbout(aboutSnapshot);
       const rows = await portfolio.request(`${config.url}/rest/v1/portfolio?id=eq.main&revision=eq.${revision}&select=revision`, {
-        method:'PATCH',headers:{...await headers(),'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({projects:normalized})
+        method:'PATCH',headers:{...await headers(),'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(payload)
       });
       if (!Array.isArray(rows) || rows.length !== 1) { showConflict(); return; }
       revision = rows[0].revision;
@@ -384,6 +444,7 @@
       const doc = await portfolio.readRemote();
       releasePreviews();
       projects = editableProjects(doc.projects);
+      renderAbout(doc);
       revision = doc.revision;
       changes = savedChanges = 0;
       conflict = false;
@@ -409,6 +470,7 @@
       if (owner !== true) throw new Error('Ovaj račun nema pristup studiju.');
       const doc = await portfolio.readRemote();
       projects = editableProjects(doc.projects);
+      renderAbout(doc);
       revision = doc.revision;
       changes = savedChanges = 0;
       conflict = false;
@@ -428,6 +490,7 @@
         if (dirty()) { showConflict(); return; }
         releasePreviews();
         projects = editableProjects(doc.projects);
+        renderAbout(doc);
         revision = doc.revision;
         render();
         status('Učitane su nove promjene.');
