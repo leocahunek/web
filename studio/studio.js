@@ -90,7 +90,7 @@
     e.target.value = '';
   });
   function renderPhotos(card,project) {
-    $('.project-photos',card).hidden = !['photo','travel'].includes(project.cat);
+    $('.project-photos',card).hidden = !['photo','travel','design'].includes(project.cat);
     $('.photo-count',card).textContent = `(${project.photos.length})`;
     const photos = $('.photo-list',card);
     photos.replaceChildren();
@@ -290,13 +290,13 @@
     }
   }
   function addProjectPhotos(project,files) {
-    if (!session || conflict || !['photo','travel'].includes(project.cat)) return;
+    if (!session || conflict || !['photo','travel','design'].includes(project.cat)) return;
     const errors = [];
     let added = 0;
     for (const file of files) {
       try {
         validateFile(file);
-        if (!file.type.startsWith('image/')) throw new Error('U fotografski projekt dodaj samo fotografije.');
+        if (!file.type.startsWith('image/')) throw new Error('U galeriju projekta dodaj samo fotografije ili grafičke slike.');
         if (project.photos.length >= portfolio.photoLimit) throw new Error(`Projekt može sadržavati najviše ${portfolio.photoLimit} fotografija.`);
         const photo = {id:crypto.randomUUID(),url:'',pending:file,preview:URL.createObjectURL(file)};
         previews.add(photo.preview);
@@ -357,7 +357,7 @@
     dropzone.classList.remove('is-over');
     if (e.target.closest('#about-editor')) { attachAboutImage(e.dataTransfer.files[0]); return; }
     const project = projectFor(e.target);
-    if (['photo','travel'].includes(project?.cat)) addProjectPhotos(project,e.dataTransfer.files);
+    if (['photo','travel','design'].includes(project?.cat)) addProjectPhotos(project,e.dataTransfer.files);
     else addFiles(e.dataTransfer.files);
   });
 

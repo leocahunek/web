@@ -11,7 +11,7 @@ Nove fotografije pripremaju se za web do 2400 px u WebP formatu. GIF zadržava i
 
 ## Više fotografija u jednom projektu
 
-Dodaj prvi rad kao i dosad, odaberi kategoriju „Fotografija” ili „Putopisna fotografija”, a zatim na njegovoj kartici klikni „Dodaj fotografije” i odaberi više datoteka. Fotografije možeš i povući na karticu tog projekta. Jedan projekt može sadržavati do 100 fotografija. Prva je naslovna; gumbima uz fotografije mijenjaš redoslijed, biraš naslovnu ili uklanjaš pojedinu fotografiju iz projekta. „Zamijeni datoteku” mijenja samo naslovnu, ostale fotografije ostaju. Posljednju fotografiju nije moguće ukloniti bez uklanjanja cijelog rada.
+Dodaj prvi rad kao i dosad, odaberi kategoriju „Fotografija”, „Putopisna fotografija” ili „Grafički dizajn”, a zatim na njegovoj kartici klikni „Dodaj fotografije” i odaberi više datoteka. Fotografije možeš i povući na karticu tog projekta. Jedan projekt može sadržavati do 100 fotografija. Prva je naslovna; gumbima uz fotografije mijenjaš redoslijed, biraš naslovnu ili uklanjaš pojedinu fotografiju iz projekta. „Zamijeni datoteku” mijenja samo naslovnu, ostale fotografije ostaju. Posljednju fotografiju nije moguće ukloniti bez uklanjanja cijelog rada.
 
 Javna galerija prikazuje jednu karticu po projektu i broj fotografija. U otvorenom pregledu fotografije se listaju zasebnim strelicama, tipkama lijevo/desno ili vodoravnim potezom na dodir; donje strelice i dalje mijenjaju cijeli projekt. Promjene se spremaju automatski. Polje `images` sprema se unutar postojećeg JSON popisa `projects`, a `image` ostaje naslovna radi kompatibilnosti. Postojeći radovi s jednim poljem `image` i dalje rade. Nova SQL migracija nije potrebna.
 

@@ -154,6 +154,10 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
     assert.equal(uploads,uploadsBefore + 1);
     console.log('PASS: edits during upload persist and do not upload the same photo twice');
 
+    await card.locator('[data-field=cat]').selectOption('design');
+    assert(await card.locator('.project-photos').isVisible());
+    await save();
+    assert.equal(doc.projects[0].cat,'design');
     const oldPhotos = [...doc.projects[0].images];
     await card.locator('[data-replace]').setInputFiles(fixture('replacement.png'));
     await save();
@@ -169,7 +173,16 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
     await save();
     assert.equal(doc.projects.length,projectCountBeforeDrop);
     assert.equal(doc.projects[0].images.length,oldPhotos.length + 1);
-    console.log('PASS: replace only the cover; drop photos onto an existing project');
+    await gallery.reload();
+    await gallery.waitForFunction(() => document.querySelectorAll('.project').length === 6);
+    await gallery.click('[data-filter=design]');
+    assert.equal(await gallery.locator('.project:visible').count(),2);
+    await gallery.locator('.project:visible .project-media').first().click();
+    assert.equal(await gallery.locator('#photo-counter').innerText(),`Fotografija 1 / ${oldPhotos.length + 1}`);
+    await gallery.click('#photo-next');
+    assert.equal(await gallery.locator('#photo-counter').innerText(),`Fotografija 2 / ${oldPhotos.length + 1}`);
+    await gallery.keyboard.press('Escape');
+    console.log('PASS: graphic design supports cover replacement, photo drop, persistence, filtering and multi-image preview');
 
     while (await card.locator('.photo-item').count() > 1) {
       await card.locator('[data-photo-action=delete]').last().click();
