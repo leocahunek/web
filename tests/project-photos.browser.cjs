@@ -180,6 +180,25 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
     assert.equal(doc.projects.at(-1).images.length,1);
     console.log('PASS: remove individual photos, protect last photo, and create new projects');
 
+    // Simulate reported File sizes without allocating or sending 150 MB.
+    const addSizedVideo = size => studio.evaluate(bytes => {
+      const input = document.querySelector('#files');
+      const transfer = new DataTransfer();
+      transfer.items.add(new File(['mock video'],'size-limit.mp4',{type:'video/mp4'}));
+      input.files = transfer.files;
+      Object.defineProperty(input.files[0],'size',{value:bytes});
+      input.dispatchEvent(new Event('change',{bubbles:true}));
+    },size);
+    const countBeforeLimit = doc.projects.length;
+    await addSizedVideo(150 * 1024 * 1024 + 1);
+    assert.equal(await studio.locator('.editor-card').count(),countBeforeLimit);
+    assert.match(await studio.locator('#upload-status').innerText(),/veća od 150 MB/);
+    await addSizedVideo(150 * 1024 * 1024);
+    assert.equal(await studio.locator('.editor-card').count(),countBeforeLimit + 1);
+    await save();
+    assert.equal(doc.projects.at(-1).cat,'video');
+    console.log('PASS: client accepts exactly 150 MB and rejects larger files (simulated sizes)');
+
     // A stale editor must retain conflict protection for galleries as well.
     await card.locator('[data-field=sub]').fill('Concurrent change test');
     doc.revision++;

@@ -70,7 +70,7 @@ insert into public.portfolio (id,projects) values ('main', $seed$[
 ]$seed$::jsonb) on conflict (id) do nothing;
 
 insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
-values ('portfolio-media','portfolio-media',true,41943040,array['image/jpeg','image/png','image/webp','image/avif','image/gif','video/mp4','video/webm'])
+values ('portfolio-media','portfolio-media',true,157286400,array['image/jpeg','image/png','image/webp','image/avif','image/gif','video/mp4','video/webm'])
 on conflict (id) do update set public = true, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
 -- Downloads of known public URLs work for visitors. Listing and changing

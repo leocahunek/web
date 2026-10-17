@@ -241,7 +241,7 @@
 
   function validateFile(file) {
     if (!types.has(file.type)) throw new Error(`Datoteka „${file.name}” nema podržan format.`);
-    if (file.size > 40 * 1024 * 1024) throw new Error(`Datoteka „${file.name}” je veća od 40 MB.`);
+    if (file.size > 150 * 1024 * 1024) throw new Error(`Datoteka „${file.name}” je veća od 150 MB.`);
     if (!file.size) throw new Error(`Datoteka „${file.name}” je prazna.`);
   }
   function attachFile(project,file) {
@@ -349,7 +349,7 @@
     const path = `${session.user.id}/${project.id}/${crypto.randomUUID()}.${extension}`;
     await portfolio.request(`${config.url}/storage/v1/object/portfolio-media/${path}`, {
       method:'POST',headers:{...auth,'Content-Type':blob.type,'x-upsert':'false','cache-control':'max-age=31536000'},body:blob
-    },120000);
+    },600000);
     return `${config.url}/storage/v1/object/public/portfolio-media/${path}`;
   }
   async function save() {
