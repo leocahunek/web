@@ -65,7 +65,7 @@ const path = require('node:path');
 
     const gallery = await context.newPage();
     await gallery.goto(`${base}/radovi.html`);
-    await gallery.waitForFunction(() => document.querySelectorAll('.project').length === 6);
+    await gallery.waitForFunction(() => document.querySelectorAll('.project').length === 6 && !!document.querySelector('.project[data-category=travel]'));
     await gallery.click('[data-filter=travel]');
     assert.equal(await gallery.locator('.project:visible').count(),1);
     assert.match(await gallery.locator('.project:visible .project-tag').innerText(),/Putopisna fotografija/i);

@@ -561,11 +561,11 @@
     $('.portrait-coordinate',root).textContent = about.coordinate;
   }
   if ($('.covers') || gallery || $('#about-body')) {
-    const immediateOrbit = !!$('.covers');
-    portfolio.load({waitForRemote:!immediateOrbit}).then(doc => {
+    const immediateContent = !!$('.covers') || !!gallery;
+    portfolio.load({waitForRemote:!immediateContent}).then(doc => {
       applyProjects(doc.projects);
       applyAbout(doc.about);
-      portfolio.subscribe(next => { applyProjects(next.projects); applyAbout(next.about); },{refreshImmediately:immediateOrbit});
+      portfolio.subscribe(next => { applyProjects(next.projects); applyAbout(next.about); },{refreshImmediately:immediateContent});
     }).catch(() => {
       applyProjects([]);
       const empty = $('.portfolio-empty');

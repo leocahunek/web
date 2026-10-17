@@ -22,7 +22,7 @@ Nastavi uređivati priloženi web portfolio za Lea Cahuneka. Sačuvaj tamni eleg
 
 ## Implementirano
 - Uvod: blenda sa šest lamela otvara se odmah tijekom 4 s; omoti se već vrte tijekom otvaranja, bez naknadnog uvoda teksta.
-- Vrtnja na naslovnici počinje iz spremljenih ili lokalnih podataka, bez čekanja na Supabase; aktualni radovi učitavaju se u pozadini.
+- Vrtnja na naslovnici i prikaz stranice Radovi počinju iz spremljenih ili lokalnih podataka, bez čekanja na Supabase; aktualni radovi učitavaju se u pozadini.
 - Naslovna s neprekidnim kruženjem omota po dijagonali: prednji niz ide od gornjeg desnog prema donjem lijevom kutu, a povratak prolazi iza njega.
 - Naslovna ispunjava visinu ekrana bez pomicanja stranice. Kotačić miša, trackpad i okomiti potezi na dodir ubrzavaju kruženje omota, uz postupan povratak na početnu brzinu.
 - Strelice, swipe i pauziranje ostaju dostupni; uz postavku smanjenog kretanja omoti miruju.
