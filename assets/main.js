@@ -32,7 +32,7 @@
   let restartAutoplay = () => {};
   let syncPauseButton = () => {};
   let disposeDeck = () => {};
-  let savedDeck = { paused:false, selectedId:null, focused:false };
+  let savedDeck = { paused:false, selectedId:null, focused:false,position:0,ids:'' };
   const gallery = $('.gallery');
   function mountDeck() {
     const covers = $('.covers');
@@ -59,7 +59,8 @@
     const on = (target,type,handler,options = {}) => target.addEventListener(type,handler,{...options,signal:events.signal});
     const fullTurn = Math.PI * 2;
     const unitsPerMs = total / 30000;
-    let position = Math.max(0,featured.findIndex(p => p.id === savedDeck.selectedId));
+    const featuredIds = featured.map(p => p.id).join(',');
+    let position = savedDeck.ids === featuredIds ? savedDeck.position : Math.max(0,featured.findIndex(p => p.id === savedDeck.selectedId));
     let selected = -1;
     let userPaused = savedDeck.paused;
     let focusPaused = false;
@@ -258,7 +259,7 @@
     }, { threshold: .01 }) : null;
     orbitObserver?.observe(covers);
     disposeDeck = () => {
-      savedDeck = { paused:userPaused, selectedId:featured[selected]?.id, focused:covers.contains(document.activeElement) };
+      savedDeck = { paused:userPaused, selectedId:featured[selected]?.id, focused:covers.contains(document.activeElement),position,ids:featuredIds };
       events.abort();
       if (frame !== null) cancelAnimationFrame(frame);
       resizeObserver?.disconnect();
@@ -560,10 +561,11 @@
     $('.portrait-coordinate',root).textContent = about.coordinate;
   }
   if ($('.covers') || gallery || $('#about-body')) {
-    portfolio.load().then(doc => {
+    const immediateOrbit = !!$('.covers');
+    portfolio.load({waitForRemote:!immediateOrbit}).then(doc => {
       applyProjects(doc.projects);
       applyAbout(doc.about);
-      portfolio.subscribe(next => { applyProjects(next.projects); applyAbout(next.about); });
+      portfolio.subscribe(next => { applyProjects(next.projects); applyAbout(next.about); },{refreshImmediately:immediateOrbit});
     }).catch(() => {
       applyProjects([]);
       const empty = $('.portfolio-empty');

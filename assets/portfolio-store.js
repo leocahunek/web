@@ -105,7 +105,7 @@
     if (!Array.isArray(rows) || rows.length !== 1 || !Number.isSafeInteger(rows[0].revision)) throw new Error('Spremište radova nije postavljeno.');
     return { projects:normalizeProjects(rows[0].projects), about:normalizeAbout(rows[0].about), aboutSupported:Object.hasOwn(rows[0],'about'), revision:rows[0].revision, remote:true };
   }
-  async function load() {
+  async function load({waitForRemote = true} = {}) {
     if (loading) return loading;
     loading = (async () => {
       const [manifest, settings, about] = await Promise.all([
@@ -118,13 +118,15 @@
       current = {projects:normalizeProjects(manifest.projects), about:aboutDefaults, aboutSupported:false, revision:0, remote:false};
       if (config) {
         current = readCache() || current;
-        try { current = await readRemote(); saveCache(current); } catch { /* Keep the last published content available offline. */ }
+        if (waitForRemote) {
+          try { current = await readRemote(); saveCache(current); } catch { /* Keep the last published content available offline. */ }
+        }
       }
       return current;
     })();
     return loading;
   }
-  function subscribe(callback) {
+  function subscribe(callback,{refreshImmediately = false} = {}) {
     if (!config) return () => {};
     let busy = false;
     let stopped = false;
@@ -145,6 +147,7 @@
     document.addEventListener('visibilitychange',refresh);
     const channel = 'BroadcastChannel' in window ? new BroadcastChannel('leo-portfolio') : null;
     if (channel) channel.onmessage = refresh;
+    if (refreshImmediately) refresh();
     return () => { stopped = true; clearInterval(interval); document.removeEventListener('visibilitychange',refresh); channel?.close(); };
   }
   const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

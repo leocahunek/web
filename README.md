@@ -15,13 +15,14 @@ Raspakiraj cijeli ZIP i otvori `index.html` u pregledniku. Zadrži sve HTML dato
 
 Za razvoj s lokalnim serverom pokreni `python3 -m http.server 8000 --bind 0.0.0.0` iz direktorija projekta.
 
-Provjere modela podataka pokreću se s `node --test tests/portfolio-store.test.cjs`. Za funkcionalne provjere pokreni lokalni server i `node tests/project-photos.browser.cjs` , `node tests/travel-orbit.browser.cjs` , `node tests/about.browser.cjs` i `node tests/availability.browser.cjs` u okruženju s Playwrightom i Chromiumom (`CHROMIUM_PATH` može promijeniti putanju preglednika, a `TEST_BASE_URL` adresu servera). Test preglednika koristi izolirani Supabase API mock; ne mijenja stvarne radove i ne zamjenjuje provjeru pravila na stvarnom projektu.
+Provjere modela podataka pokreću se s `node --test tests/portfolio-store.test.cjs`. Za funkcionalne provjere pokreni lokalni server i `node tests/project-photos.browser.cjs` , `node tests/travel-orbit.browser.cjs` , `node tests/about.browser.cjs` , `node tests/availability.browser.cjs` i `node tests/fast-home.browser.cjs` u okruženju s Playwrightom i Chromiumom (`CHROMIUM_PATH` može promijeniti putanju preglednika, a `TEST_BASE_URL` adresu servera). Test preglednika koristi izolirani Supabase API mock; ne mijenja stvarne radove i ne zamjenjuje provjeru pravila na stvarnom projektu.
 
 ## Za nastavak u drugom chatu
 Nastavi uređivati priloženi web portfolio za Lea Cahuneka. Sačuvaj tamni elegantni dizajn, responzivnost, uvodno otvaranje blende i listanje radova poput omota ploča.
 
 ## Implementirano
 - Uvod: blenda sa šest lamela otvara se odmah tijekom 0,9 s; omoti se već vrte tijekom otvaranja, bez naknadnog uvoda teksta.
+- Vrtnja na naslovnici počinje iz spremljenih ili lokalnih podataka, bez čekanja na Supabase; aktualni radovi učitavaju se u pozadini.
 - Naslovna s neprekidnim kruženjem omota po dijagonali: prednji niz ide od gornjeg desnog prema donjem lijevom kutu, a povratak prolazi iza njega.
 - Naslovna ispunjava visinu ekrana bez pomicanja stranice. Kotačić miša, trackpad i okomiti potezi na dodir ubrzavaju kruženje omota, uz postupan povratak na početnu brzinu.
 - Strelice, swipe i pauziranje ostaju dostupni; uz postavku smanjenog kretanja omoti miruju.
