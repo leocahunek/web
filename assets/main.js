@@ -2,6 +2,15 @@
   'use strict';
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+  // Upgrade the old noninteractive badge when cached HTML loads the new script.
+  const availability = $('.availability');
+  if (availability && availability.tagName !== 'A') {
+    const link = document.createElement('a');
+    link.className = availability.className;
+    link.href = 'kontakt.html';
+    link.append(...availability.childNodes);
+    availability.replaceWith(link);
+  }
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   let reducedMotion = motion.matches;
   let projects = [];

@@ -19,7 +19,9 @@ html.home-page,
   border-bottom: 0;
   touch-action: pinch-zoom;
 }
-.home-page .hero-top { grid-row: 1; }
+.home-page .hero-top { grid-row: 1; position:relative; z-index:2; }
+.home-page a.availability { position:relative; z-index:1; pointer-events:auto; }
+.home-page a.availability:hover, .home-page a.availability:focus-visible { border-color:#83efab; }
 .home-page .hero h1 { font-size: clamp(34px, min(5.55vw, 8dvh), 90px); }
 .home-page .hero-kicker { margin-bottom: clamp(10px, 2dvh, 21px); }
 .home-page .covers {
