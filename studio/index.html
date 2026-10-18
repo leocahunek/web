@@ -10,9 +10,9 @@
   <link rel="icon" href="../assets/camera-cursor.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../assets/style.css?v=about-editor-1">
   <link rel="stylesheet" href="../assets/theme.css?v=about-editor-1">
-  <link rel="stylesheet" href="studio.css?v=video-preview-1">
+  <link rel="stylesheet" href="studio.css?v=custom-thumbnail-1">
   <script src="../assets/portfolio-store.js?v=fast-home-1" defer></script>
-  <script src="studio.js?v=video-thumbnail-1" defer></script>
+  <script src="studio.js?v=custom-thumbnail-1" defer></script>
 </head>
 <body data-page="admin">
   <header class="studio-header">
@@ -77,7 +77,7 @@
           <p class="photos-help">Prva fotografija je naslovna. Dodaj do 100 fotografija, promijeni njihov redoslijed ili odaberi drugu naslovnu.</p>
           <div class="photo-list"></div>
         </section>
-        <div class="editor-bottom"><button type="button" class="quiet-button" data-action="thumbnail" hidden>Izradi naslovnu iz videa</button><label class="featured-option"><input data-field="featured" type="checkbox">Prikaži na naslovnoj</label><label class="replace-button">Zamijeni datoteku<input type="file" data-replace accept="image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" hidden></label></div>
+        <div class="editor-bottom"><button type="button" class="quiet-button" data-action="upload-thumbnail" hidden>Dodaj thumbnail</button><input type="file" data-thumbnail accept="image/jpeg,image/png,image/webp,image/avif,image/gif" hidden><button type="button" class="quiet-button" data-action="thumbnail" hidden>Izradi naslovnu iz videa</button><label class="featured-option"><input data-field="featured" type="checkbox">Prikaži na naslovnoj</label><label class="replace-button">Zamijeni datoteku<input type="file" data-replace accept="image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" hidden></label></div>
       </div>
     </article>
   </template>

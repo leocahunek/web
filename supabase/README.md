@@ -47,3 +47,5 @@ Video možeš dodati zasebnim gumbom „Dodaj video”. Kartica prikazuje lokaln
 Kad dodaš video bez naslovne slike, Studio tijekom spremanja uzima rani kadar videa, priprema sliku i sprema je u isto spremište uz video. Naslovna se prikazuje u javnoj galeriji, na naslovnici za odabrane radove i kao poster u video pregledu. Već postavljene naslovne slike ostaju sačuvane.
 
 Za postojeći video klikni „Izradi naslovnu iz videa” na njegovoj kartici. Time možeš izraditi ili obnoviti naslovnu i bez ponovnog prijenosa videa. Ako preglednik ne može dekodirati video ili pristupiti kadru, Studio prikaže uputu, a prijenos videa se nastavlja; vlastitu naslovnu možeš dodati slikom preko „Zamijeni datoteku”. Nije potrebna SQL nadogradnja.
+
+Uz svaki video postoji zaseban gumb „Dodaj thumbnail” / „Promijeni thumbnail”. Otvara odabir slike i mijenja samo naslovnu, bez ponovnog prijenosa ili izmjene videa. Podržani su JPG, PNG, WebP, AVIF i GIF. Promjena se sprema automatski.

@@ -260,12 +260,20 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
     await studio.waitForFunction(()=>!![...document.querySelectorAll('.editor-card')].at(-1).querySelector('video').getAttribute('poster'));
     await save();
     assert.equal(doc.projects.at(-1).id,videoId);assert(doc.projects.at(-1).image.endsWith('.webp'));
-    await studio.locator('.editor-card').last().locator('[data-replace]').setInputFiles(fixture('custom-poster.png'));
+    const originalVideo=doc.projects.at(-1).video;
+    const chooseThumbnail=studio.waitForEvent('filechooser');
+    await studio.locator('.editor-card').last().locator('[data-action=upload-thumbnail]').click();
+    await (await chooseThumbnail).setFiles(fixture('custom-poster.png'));
     await save();
     const customPoster=doc.projects.at(-1).image;
+    assert.equal(doc.projects.at(-1).video,originalVideo);
+    assert.equal(doc.projects.at(-1).cat,'video');
+    await studio.locator('.editor-card').last().locator('[data-thumbnail]').setInputFiles({name:'not-image.mp4',mimeType:'video/mp4',buffer:sampleVideo});
+    assert.match(await studio.locator('#upload-status').innerText(),/odaberi sliku/);
+    assert.equal(doc.projects.at(-1).image,customPoster);
     await studio.locator('.editor-card').last().locator('[data-replace]').setInputFiles({name:'replacement.mp4',mimeType:'video/mp4',buffer:sampleVideo});
     await save();assert.equal(doc.projects.at(-1).image,customPoster);
-    console.log('PASS: automatic frame thumbnail persists, displays in gallery/lightbox, repairs old videos, and preserves a custom poster');
+    console.log('PASS: automatic frame thumbnail persists, displays in gallery/lightbox, repairs old videos, uploads a custom poster without changing video, and rejects non-images');
 
     const storageErrors = await studio.evaluate(async () => {
       const config=LeoPortfolio.getConfig();

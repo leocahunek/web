@@ -144,6 +144,9 @@
       const thumbnailButton = $('[data-action=thumbnail]',card);
       thumbnailButton.hidden = !videoSource;
       thumbnailButton.disabled = !!project.thumbnailBusy;
+      const uploadThumbnail = $('[data-action=upload-thumbnail]',card);
+      uploadThumbnail.hidden = !videoSource;
+      uploadThumbnail.textContent = source ? 'Promijeni thumbnail' : 'Dodaj thumbnail';
       if (videoSource) {
         video.hidden = false;
         video.src = videoSource;
@@ -212,6 +215,7 @@
     const action = e.target.closest('[data-action]')?.dataset.action;
     const project = projectFor(e.target);
     if (!action || !project || conflict) return;
+    if (action === 'upload-thumbnail') { $('[data-thumbnail]',e.target.closest('.editor-card')).click(); return; }
     if (action === 'thumbnail') { generateThumbnail(project); return; }
     const index = projects.indexOf(project);
     if (action === 'delete') {
@@ -329,6 +333,21 @@
     if (added) { changed(); render(); }
   }
   list.addEventListener('change',e => {
+    if (e.target.matches('[data-thumbnail]')) {
+      const project = projectFor(e.target);
+      const file = e.target.files[0];
+      if (!project || !file || conflict) return;
+      try {
+        validateFile(file);
+        if (!file.type.startsWith('image/')) throw new Error('Za thumbnail odaberi sliku, ne video.');
+        attachFile(project,file);
+        changed();
+        render();
+        uploadStatus('');
+      } catch (error) { uploadStatus(error.message); }
+      e.target.value = '';
+      return;
+    }
     if (e.target.matches('[data-add-photos]')) {
       const project = projectFor(e.target);
       if (project) addProjectPhotos(project,e.target.files);
@@ -391,7 +410,7 @@
     try {
       return await new Promise((resolve,reject) => {
         let capturing = false;
-        const failed = () => reject(new Error('Naslovnu nije moguće izraditi u ovom pregledniku. Dodaj sliku opcijom „Zamijeni datoteku”.'));
+        const failed = () => reject(new Error('Naslovnu nije moguće izraditi u ovom pregledniku. Odaberi vlastitu sliku gumbom za thumbnail.'));
         const capture = () => {
           if (capturing || !video.videoWidth || !video.videoHeight) return;
           capturing = true;
