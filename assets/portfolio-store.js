@@ -76,13 +76,18 @@
     error.status = status;
     return error;
   }
-  async function request(url, options = {}, timeout = 10000) {
+  async function request(url, options = {}, timeout = 30000) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
     try {
       const response = await fetch(url, { ...options, signal:controller.signal, cache:'no-store', referrerPolicy:'no-referrer' });
       if (!response.ok) throw requestError(response.status,await response.json().catch(() => ({})),String(url).includes('/storage/v1/'));
-      return response.status === 204 ? null : response.json();
+      return response.status === 204 ? null : await response.json();
+    } catch (error) {
+      if (controller.signal.aborted) {
+        throw new Error('Poslužitelj nije odgovorio na vrijeme. Ako spremaš rad, zadrži ovu karticu otvorenom i pokušaj ponovno gumbom „Spremi odmah”.');
+      }
+      throw error;
     } finally { clearTimeout(timer); }
   }
   function readCache() {

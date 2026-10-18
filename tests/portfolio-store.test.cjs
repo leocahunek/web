@@ -58,3 +58,15 @@ test('about content keeps paragraphs and services and rejects unsafe media', () 
   assert.throws(() => context.window.LeoPortfolio.normalizeAbout({...aboutFixture,title:''}));
   assert.throws(() => context.window.LeoPortfolio.normalizeAbout({...aboutFixture,services:Array(13).fill('service')}));
 });
+
+
+test('request timeout stays active while reading response and explains retry', async () => {
+  const isolated = vm.createContext({URL, AbortController, setTimeout, clearTimeout, window:{},
+    document:{currentScript:{src:'https://example.com/assets/portfolio-store.js'}},
+    fetch:async (url, options) => ({ok:true,status:200,json:() => new Promise((resolve,reject) => {
+      options.signal.addEventListener('abort',() => reject(new Error('Fetch is aborted')));
+    })})
+  });
+  vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../assets/portfolio-store.js'),'utf8'),isolated);
+  await assert.rejects(isolated.window.LeoPortfolio.request('https://example.com',{},20),/Poslužitelj nije odgovorio na vrijeme/);
+});
