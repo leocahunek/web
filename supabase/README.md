@@ -41,3 +41,9 @@ Za postojeći projekt pokreni `supabase/upload-limit.sql` u SQL Editoru. U Stora
 Za postojeći projekt jednom pokreni `supabase/mov.sql` u SQL Editoru. Skripta dodaje MIME tip `video/quicktime` u postojeći popis dopuštenih formata bucketa, bez promjene ograničenja veličine. Studio prihvaća `.mov` i kad preglednik ne prepozna MIME tip te ga prenosi kao `video/quicktime`. MOV se ne pretvara u drugi format. Reprodukcija ovisi o kodeku i pregledniku; za najširu podršku izvezi video kao MP4 s H.264 videozapisom i AAC zvukom. Upload testovi koriste testne datoteke i ne potvrđuju reprodukciju stvarnog MOV videa.
 
 Video možeš dodati zasebnim gumbom „Dodaj video”. Kartica prikazuje lokalni pregled odmah nakon odabira; zatim se video automatski prenosi i objavljuje. Ako preglednik ne podržava kodek, kartica prikazuje objašnjenje, a prijenos je i dalje moguć. Datoteke koje preglednik označi generičkim MIME tipom prepoznaju se po nastavku MP4, WebM ili MOV. Pogreške veličine i MIME pravila spremišta prikazuju konkretne upute za postavke.
+
+## Automatska naslovna videa
+
+Kad dodaš video bez naslovne slike, Studio tijekom spremanja uzima rani kadar videa, priprema sliku i sprema je u isto spremište uz video. Naslovna se prikazuje u javnoj galeriji, na naslovnici za odabrane radove i kao poster u video pregledu. Već postavljene naslovne slike ostaju sačuvane.
+
+Za postojeći video klikni „Izradi naslovnu iz videa” na njegovoj kartici. Time možeš izraditi ili obnoviti naslovnu i bez ponovnog prijenosa videa. Ako preglednik ne može dekodirati video ili pristupiti kadru, Studio prikaže uputu, a prijenos videa se nastavlja; vlastitu naslovnu možeš dodati slikom preko „Zamijeni datoteku”. Nije potrebna SQL nadogradnja.

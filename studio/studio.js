@@ -141,6 +141,9 @@
       $('.video-label',card).hidden = !project.video && !project.pendingVideo;
       const video = $('video',card);
       const videoSource = project.videoPreview || project.video;
+      const thumbnailButton = $('[data-action=thumbnail]',card);
+      thumbnailButton.hidden = !videoSource;
+      thumbnailButton.disabled = !!project.thumbnailBusy;
       if (videoSource) {
         video.hidden = false;
         video.src = videoSource;
@@ -209,6 +212,7 @@
     const action = e.target.closest('[data-action]')?.dataset.action;
     const project = projectFor(e.target);
     if (!action || !project || conflict) return;
+    if (action === 'thumbnail') { generateThumbnail(project); return; }
     const index = projects.indexOf(project);
     if (action === 'delete') {
       if (!confirm(`Ukloniti rad „${project.name}” s weba?`)) return;
@@ -375,6 +379,72 @@
     } catch { throw new Error(`Fotografiju „${file.name}” nije moguće otvoriti.`); }
     finally { bitmap?.close(); }
   }
+  async function videoThumbnail(source) {
+    const video = document.createElement('video');
+    const local = typeof source !== 'string';
+    const url = local ? URL.createObjectURL(source) : source;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    if (!local) video.crossOrigin = 'anonymous';
+    let timeout;
+    try {
+      return await new Promise((resolve,reject) => {
+        let capturing = false;
+        const failed = () => reject(new Error('Naslovnu nije moguće izraditi u ovom pregledniku. Dodaj sliku opcijom „Zamijeni datoteku”.'));
+        const capture = () => {
+          if (capturing || !video.videoWidth || !video.videoHeight) return;
+          capturing = true;
+          try {
+            const ratio = Math.min(1,1600 / Math.max(video.videoWidth,video.videoHeight));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1,Math.round(video.videoWidth * ratio));
+            canvas.height = Math.max(1,Math.round(video.videoHeight * ratio));
+            canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+            canvas.toBlob(blob => blob ? resolve(new File([blob],'video-thumbnail.webp',{type:blob.type})) : failed(),'image/webp',.88);
+          } catch { failed(); }
+        };
+        video.addEventListener('error',failed,{once:true});
+        video.addEventListener('seeked',capture);
+        video.addEventListener('loadeddata',() => {
+          const target = Number.isFinite(video.duration) ? Math.min(1,video.duration * .25) : 0;
+          if (Math.abs(video.currentTime - target) > .01) video.currentTime = target;
+          else capture();
+        });
+        timeout = setTimeout(failed,12000);
+        video.src = url;
+        video.load();
+      });
+    } finally {
+      clearTimeout(timeout);
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      if (local) URL.revokeObjectURL(url);
+    }
+  }
+  async function generateThumbnail(project) {
+    if (!session || conflict || project.thumbnailBusy) return;
+    const source = project.pendingVideo || project.video;
+    if (!source) return;
+    const originalCover = project.photos[0];
+    project.thumbnailBusy = true;
+    const button = list.querySelector(`[data-id="${project.id}"] [data-action=thumbnail]`);
+    if (button) button.disabled = true;
+    try {
+      const file = await videoThumbnail(source);
+      if (conflict || !session || !projects.includes(project) || source !== (project.pendingVideo || project.video) || originalCover !== project.photos[0]) return;
+      attachFile(project,file);
+      changed();
+      render();
+      uploadStatus('');
+    } catch (error) { uploadStatus(error.message); }
+    finally {
+      project.thumbnailBusy = false;
+      const currentButton = list.querySelector(`[data-id="${project.id}"] [data-action=thumbnail]`);
+      if (currentButton) currentButton.disabled = false;
+    }
+  }
   async function upload(project,field,file) {
     const blob = field === 'image' ? await prepareImage(file) : file;
     const extension = {'image/webp':'webp','image/png':'png','image/jpeg':'jpg','image/gif':'gif','video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov'}[blob.type];
@@ -410,6 +480,16 @@
         }
       }
       for (const project of snapshot) {
+        if (project.pendingVideo && !project.photos.length) {
+          status(`Izrađujem naslovnu: ${project.name}`);
+          try {
+            const file = await videoThumbnail(project.pendingVideo);
+            const photo = {id:crypto.randomUUID(),url:'',pending:file};
+            project.photos.push(photo);
+            const live = projects.find(p => p.id === project.id);
+            if (live && live.pendingVideo === project.pendingVideo && !live.photos.length) live.photos.push({...photo});
+          } catch (error) { uploadStatus(error.message); }
+        }
         for (const photo of project.photos) {
           if (!photo.pending) continue;
           status(`Spremam fotografije: ${project.name}`);
@@ -427,6 +507,8 @@
             if (live.photos[0] === livePhoto) {
               const cover = card?.querySelector('.editor-cover img');
               if (cover) { cover.src = photo.url; cover.hidden = false; }
+              const video = card?.querySelector('.editor-cover video');
+              if (video) video.poster = photo.url;
             }
           }
         }

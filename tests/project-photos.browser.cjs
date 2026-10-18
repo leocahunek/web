@@ -17,6 +17,7 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
     context.on('page', page => page.on('pageerror', error => errors.push(error.message)));
     let doc = {projects:JSON.parse(fs.readFileSync(path.join(__dirname,'../data/portfolio.json'),'utf8')).projects, revision:1};
     let uploads = 0;
+    const storedFiles = new Map();
     let failUpload = false;
     let holdUpload;
     await context.route('https://images.unsplash.com/**', route => route.fulfill({contentType:'image/png', body:png}));
@@ -26,12 +27,16 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
       const json = data => route.fulfill({contentType:'application/json', body:JSON.stringify(data)});
       if (url.pathname === '/auth/v1/token') return json({access_token:'test-only',refresh_token:'test-only',expires_in:3600,user:{id:'test-owner'}});
       if (url.pathname === '/rest/v1/rpc/is_portfolio_owner') return json(true);
-      if (url.pathname.startsWith('/storage/v1/object/public/')) return url.pathname.endsWith('.mp4') ? route.fulfill({contentType:'video/mp4',body:sampleVideo}) : route.fulfill({contentType:'image/png',body:png});
+      if (url.pathname.startsWith('/storage/v1/object/public/')) {
+        const stored=storedFiles.get(url.pathname.replace('/object/public/','/object/'));
+        return route.fulfill({headers:{'Access-Control-Allow-Origin':'*'},contentType:stored?.type || (url.pathname.endsWith('.mp4')?'video/mp4':'image/png'),body:stored?.body || (url.pathname.endsWith('.mp4')?sampleVideo:png)});
+      }
       if (url.pathname.endsWith('/reject-size')) return route.fulfill({status:413,contentType:'application/json',body:JSON.stringify({message:'The object exceeded the maximum allowed size'})});
       if (url.pathname.endsWith('/reject-type')) return route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({message:'mime type video/quicktime is not supported'})});
       if (url.pathname.startsWith('/storage/v1/object/')) {
         if (failUpload) { failUpload = false; return route.fulfill({status:500,body:'{}'}); }
         if (url.pathname.endsWith('.mov')) assert.equal(request.headers()['content-type'],'video/quicktime');
+        storedFiles.set(url.pathname,{type:request.headers()['content-type'],body:request.postDataBuffer()});
         uploads++;
         if (holdUpload) await holdUpload();
         return json({Key:'uploaded'});
@@ -231,11 +236,37 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
       await videoCard.locator('video').evaluate(video => video.pause());
       await save();
       assert(doc.projects.at(-1).video.endsWith('.mp4'));
+      assert(doc.projects.at(-1).image.endsWith('.webp'));
+      assert.equal(doc.projects.at(-1).images[0],doc.projects.at(-1).image);
     }
     await login();
     await studio.waitForFunction(() => [...document.querySelectorAll('.editor-card')].at(-1).querySelector('video').readyState >= 2);
     assert((await studio.locator('.editor-card').last().locator('video').getAttribute('src')).startsWith('https://'));
     console.log('PASS: genuine H.264 MP4 previews and plays locally and after saved reload; missing/alias MIME types accepted');
+    assert.equal(await studio.locator('.editor-card').last().locator('video').getAttribute('poster'),doc.projects.at(-1).image);
+    const videoId=doc.projects.at(-1).id;
+    await gallery.reload();
+    await gallery.waitForFunction(count=>document.querySelectorAll('.project').length===count,doc.projects.length);
+    await gallery.locator('.project').last().locator('.media-image').waitFor({state:'attached'});
+    await gallery.locator('.project').last().locator('img').scrollIntoViewIfNeeded();
+    await gallery.waitForFunction(()=>[...document.querySelectorAll('.project')].at(-1).querySelector('img')?.naturalWidth>0);
+    assert.equal(await gallery.locator('.project').last().locator('img').getAttribute('src'),doc.projects.at(-1).image);
+    await gallery.locator('.project-media').last().click();
+    assert.equal(await gallery.locator('#lightbox video').getAttribute('poster'),doc.projects.at(-1).image);
+    await gallery.keyboard.press('Escape');
+    doc.projects.at(-1).image='';doc.projects.at(-1).images=[];doc.revision++;
+    await login();
+    await studio.locator('.editor-card').last().locator('[data-action=thumbnail]').click();
+    await studio.waitForFunction(()=>!![...document.querySelectorAll('.editor-card')].at(-1).querySelector('video').getAttribute('poster'));
+    await save();
+    assert.equal(doc.projects.at(-1).id,videoId);assert(doc.projects.at(-1).image.endsWith('.webp'));
+    await studio.locator('.editor-card').last().locator('[data-replace]').setInputFiles(fixture('custom-poster.png'));
+    await save();
+    const customPoster=doc.projects.at(-1).image;
+    await studio.locator('.editor-card').last().locator('[data-replace]').setInputFiles({name:'replacement.mp4',mimeType:'video/mp4',buffer:sampleVideo});
+    await save();assert.equal(doc.projects.at(-1).image,customPoster);
+    console.log('PASS: automatic frame thumbnail persists, displays in gallery/lightbox, repairs old videos, and preserves a custom poster');
+
     const storageErrors = await studio.evaluate(async () => {
       const config=LeoPortfolio.getConfig();
       const result=[];
