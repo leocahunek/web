@@ -1,4 +1,4 @@
-/* Arpona is used when installed locally or supplied by a licensed web-font kit.
+/* Aquavit is supplied by the Adobe Fonts web project linked in each page.
    The bundled Marcellus fallback is distributed under the SIL Open Font License. */
 @font-face {
   font-family: 'Marcellus';
@@ -24,7 +24,7 @@
   --muted: rgb(255 255 255 / .72);
   --line: rgb(255 255 255 / .2);
   --accent: #fff;
-  --font-main: 'Arpona', 'Arpona Regular', 'Marcellus', 'Optima', Georgia, serif;
+  --font-main: 'aquavit', 'Marcellus', sans-serif;
 }
 
 body {

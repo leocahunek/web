@@ -47,7 +47,7 @@ Nastavi uređivati priloženi web portfolio za Lea Cahuneka. Sačuvaj tamni eleg
 
 ## Tipografija
 
-Arpona je prva u CSS izboru fontova. Datoteke Arpone ili Adobe Fonts web-projekt još nisu dostavljeni, pa se Arpona koristi samo ako je lokalno instalirana. U ostalim slučajevima prikazuje se priloženi Marcellus kao privremena zamjena, uključujući hrvatske znakove. Za stvarnu Arponu na svim uređajima poveži odgovarajući Adobe Fonts CSS ili dodaj licencirane datoteke i `@font-face` pravila u `assets/theme.css`.
+Glavni font je Aquavit (`font-family: "aquavit"`) iz Adobe Fonts web-projekta `https://use.typekit.net/job4tqi.css`, povezanog na sve javne stranice i Studio. Ako se Adobe font ne učita, koristi se lokalni Marcellus, zatim sustavni sans-serif. Pristup Adobe Fonts domenu blokiran je mrežnom politikom razvojnog okruženja, pa stvarno učitavanje Aquavita treba provjeriti na javnoj objavi. Adobe web-projekt mora ostati aktivan.
 
 Marcellus je preuzet s Google Fonts i uključen uz SIL Open Font License u `assets/fonts/LICENSE-Marcellus.txt`.
 
