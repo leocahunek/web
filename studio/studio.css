@@ -18,7 +18,7 @@ h1 { font-size:clamp(40px,5vw,68px); font-weight:400; line-height:1.05; letter-s
 .workspace { max-width:1380px; margin:auto; padding:45px 5% 80px; }
 .workspace-heading { display:flex; justify-content:space-between; align-items:end; gap:24px; margin-bottom:35px; }
 .workspace-heading h1 { margin-bottom:0; }
-.save-controls { display:flex; gap:18px; align-items:center; }
+.save-controls { display:flex; flex-wrap:wrap; gap:18px; align-items:center; }
 #save-status { max-width:260px; font-size:11px; line-height:1.6; color:#83efab; }
 #save-status[data-error=true] { color:#ffb7c5; }
 .dropzone { display:grid; justify-items:center; gap:13px; padding:38px 20px; border:1px dashed #ffffff60; border-radius:12px; background:#140d1c80; text-align:center; transition:background .2s,border-color .2s; cursor:pointer; }

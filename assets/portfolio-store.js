@@ -63,23 +63,25 @@
     }
     return { url:url.origin, publishableKey:key };
   }
+  function requestError(status,details = {},storage = false) {
+    let message = status === 401 || status === 403 ? 'Prijava nema ovlasti za ovu radnju.' : `Spremište trenutačno nije dostupno (HTTP ${status}).`;
+    if (storage) {
+      details = details || {};
+      const reason = [details.code,details.error,details.message].filter(value => typeof value === 'string').join(' ');
+      if (status === 507 || /quota|insufficient.*storage|storage.*full|disk.*full/i.test(reason)) message = 'Supabase spremište je doseglo ograničenje prostora. Provjeri Storage potrošnju u Supabaseu.';
+      else if (status === 413 || /entity.?too.?large|maximum allowed size|exceed.*size|size.*exceed/i.test(reason)) message = 'Supabase odbija veličinu datoteke. Provjeri globalni i bucket limit; primjenjuje se niži limit.';
+      else if (status === 415 || /mime|content.?type|file.?type/i.test(reason)) message = 'Supabase odbija format datoteke. Provjeri dopuštene formate bucketa portfolio-media.';
+    }
+    const error = new Error(message);
+    error.status = status;
+    return error;
+  }
   async function request(url, options = {}, timeout = 10000) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
     try {
       const response = await fetch(url, { ...options, signal:controller.signal, cache:'no-store', referrerPolicy:'no-referrer' });
-      if (!response.ok) {
-        let message = response.status === 401 || response.status === 403 ? 'Prijava nema ovlasti za ovu radnju.' : `Spremište trenutačno nije dostupno (HTTP ${response.status}).`;
-        if (String(url).includes('/storage/v1/')) {
-          const details = await response.json().catch(() => ({}));
-          const reason = [details.code,details.error,details.message].filter(value => typeof value === 'string').join(' ');
-          if (response.status === 413 || /entity.?too.?large|maximum allowed size|exceed.*size|size.*exceed/i.test(reason)) message = 'Supabase odbija veličinu datoteke. Provjeri globalni Storage limit i limit bucketa portfolio-media (najmanje 150 MB).';
-          else if (response.status === 415 || /mime|content.?type|file.?type/i.test(reason)) message = 'Supabase odbija format videa. U dopuštenim formatima bucketa trebaju biti video/mp4, video/webm i video/quicktime.';
-        }
-        const error = new Error(message);
-        error.status = response.status;
-        throw error;
-      }
+      if (!response.ok) throw requestError(response.status,await response.json().catch(() => ({})),String(url).includes('/storage/v1/'));
       return response.status === 204 ? null : response.json();
     } finally { clearTimeout(timer); }
   }
@@ -159,5 +161,5 @@
     }
     return url.href;
   }
-  window.LeoPortfolio = Object.freeze({ load, subscribe, normalizeProjects, normalizeAbout, mediaURL, imageURL, escapeHTML, request, photoLimit, getConfig:() => config, readRemote });
+  window.LeoPortfolio = Object.freeze({ load, subscribe, normalizeProjects, normalizeAbout, mediaURL, imageURL, escapeHTML, request, requestError, photoLimit, getConfig:() => config, readRemote });
 })();

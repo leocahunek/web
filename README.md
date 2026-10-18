@@ -71,3 +71,5 @@ Kontaktni obrazac šalje HTTPS POST u pozadini na `https://formsubmit.co/ajax/ca
 Prvo slanje zahtijeva potvrdu adrese primatelja kroz FormSubmit aktivacijski e-mail. Tu potvrdu i primitak stvarne poruke treba provjeriti na javnom webu; testovi preglednika presreću zahtjev i ne šalju e-mail. Ako FormSubmit nije dostupan, koristi izravnu e-mail poveznicu. Prethodni TXT demo više ne presreće slanje obrasca.
 
 Provjera obrasca: `node tests/contact.browser.cjs` uz pokrenut lokalni server i Playwright/Chromium. Provjeravaju se AJAX prihvat i popup, pogreške i ponovni pokušaj, zaštita od dvostrukog slanja te standardni POST bez JavaScripta, bez stvarnog slanja e-maila.
+
+Studio prikazuje napredak prijenosa datoteka i čekanje potvrde poslužitelja. Ako prijenos zapne, „Prekini prijenos” otključava ponovno spremanje i zadržava izmjene u otvorenoj kartici. Nespremljene datoteke nisu sačuvane nakon osvježavanja ili zatvaranja kartice. Za veličinu datoteke vrijedi niži od globalnog Supabase Storage limita i limita bucketa.

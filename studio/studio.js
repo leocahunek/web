@@ -11,6 +11,8 @@
   let changes = 0;
   let savedChanges = 0;
   let saving = false;
+  let activeUpload = null;
+  let uploadMessage = '';
   let conflict = false;
   let timer = null;
   let stopWatching = () => {};
@@ -35,7 +37,7 @@
   }
   function changed() {
     changes++;
-    status('Promjene čekaju spremanje.');
+    status(saving ? `${uploadMessage || 'Spremanje je u tijeku.'} Dodatne izmjene spremit će se zatim.` : 'Promjene čekaju spremanje.');
     scheduleSave();
   }
   function releasePreviews() {
@@ -470,9 +472,46 @@
     if (!extension) throw new Error('Datoteku nije moguće pripremiti za objavu.');
     const auth = await headers();
     const path = `${session.user.id}/${project.id}/${crypto.randomUUID()}.${extension}`;
-    await portfolio.request(`${config.url}/storage/v1/object/portfolio-media/${path}`, {
-      method:'POST',headers:{...auth,'Content-Type':blob.type,'x-upsert':'false','cache-control':'max-age=31536000'},body:blob
-    },600000);
+    await new Promise((resolve,reject) => {
+      const xhr = new XMLHttpRequest();
+      activeUpload = xhr;
+      uploadMessage = `Prenosim: ${project.name || 'O meni'}…`;
+      status(uploadMessage);
+      $('#cancel-upload').hidden = false;
+      const cleanup = () => {
+        if (activeUpload === xhr) {
+          activeUpload = null;
+          uploadMessage = '';
+          $('#cancel-upload').hidden = true;
+        }
+      };
+      const fail = error => { cleanup(); reject(error); };
+      xhr.upload.onload = () => {
+        uploadMessage = `Datoteka prenesena: ${project.name || 'O meni'} — čekam potvrdu…`;
+        status(uploadMessage);
+      };
+      xhr.upload.onprogress = event => {
+        if (!event.lengthComputable) return;
+        const percent = Math.min(100,Math.round(event.loaded / event.total * 100));
+        uploadMessage = `Prenosim: ${project.name || 'O meni'} — ${percent} %`;
+        status(uploadMessage);
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) { cleanup(); resolve(); return; }
+        let details = {};
+        try { details = JSON.parse(xhr.responseText); } catch { /* Non-JSON server errors still include their HTTP status. */ }
+        fail(portfolio.requestError(xhr.status,details,true));
+      };
+      xhr.onerror = () => fail(new Error('Veza je prekinula prijenos. Izmjene su zadržane; pokušaj ponovno gumbom „Spremi odmah”.'));
+      xhr.ontimeout = () => fail(new Error('Prijenos traje predugo. Izmjene su zadržane; pokušaj ponovno gumbom „Spremi odmah”.'));
+      xhr.onabort = () => fail(new Error('Prijenos je prekinut. Izmjene su zadržane; možeš ponovno kliknuti „Spremi odmah”.'));
+      try {
+        xhr.open('POST',`${config.url}/storage/v1/object/portfolio-media/${path}`);
+        xhr.timeout = 600000;
+        for (const [key,value] of Object.entries({...auth,'Content-Type':blob.type,'x-upsert':'false','cache-control':'max-age=31536000'})) xhr.setRequestHeader(key,value);
+        xhr.send(blob);
+      } catch (error) { fail(error); }
+    });
     return `${config.url}/storage/v1/object/public/portfolio-media/${path}`;
   }
   async function save() {
@@ -549,6 +588,7 @@
         status('Spremam preostale promjene…');
         return;
       }
+      status('Spremam izmjene u bazu…');
       const normalized = portfolio.normalizeProjects(snapshot);
       const payload = {projects:normalized};
       if (aboutSupported) payload.about = portfolio.normalizeAbout(aboutSnapshot);
@@ -572,6 +612,7 @@
       if (successful && dirty()) scheduleSave();
     }
   }
+  $('#cancel-upload').addEventListener('click',() => { activeUpload?.abort(); });
   $('#save').addEventListener('click',save);
   $('#reload').addEventListener('click',async () => {
     if (saving || (dirty() && !confirm('Odbaciti nespremljene izmjene i učitati aktualne radove?'))) return;

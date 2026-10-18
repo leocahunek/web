@@ -24,7 +24,7 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
     await context.route('https://*.supabase.co/**', async route => {
       const request = route.request();
       const url = new URL(request.url());
-      const json = data => route.fulfill({contentType:'application/json', body:JSON.stringify(data)});
+      const json = data => route.fulfill({headers:{'Access-Control-Allow-Origin':'*'},contentType:'application/json', body:JSON.stringify(data)});
       if (url.pathname === '/auth/v1/token') return json({access_token:'test-only',refresh_token:'test-only',expires_in:3600,user:{id:'test-owner'}});
       if (url.pathname === '/rest/v1/rpc/is_portfolio_owner') return json(true);
       if (url.pathname.startsWith('/storage/v1/object/public/')) {
@@ -151,6 +151,9 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
     await card.locator('[data-add-photos]').setInputFiles(fixture('slow.png'));
     await startedPromise;
     await card.locator('[data-field=name]').fill('Promjena tijekom prijenosa');
+    assert.equal(await studio.locator('#save').isDisabled(),true);
+    assert(await studio.locator('#cancel-upload').isVisible());
+    assert.doesNotMatch(await studio.locator('#save-status').innerText(),/^Promjene čekaju spremanje/);
     holdUpload = null;
     release();
     await studio.waitForFunction(() => { const el = document.querySelector('#save-status'); return el.textContent === 'Sve promjene spremljene i objavljene.' || el.dataset.error === 'true'; }, null, {timeout:15000});
@@ -159,6 +162,24 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
     assert.equal(doc.projects[0].images.length,5);
     assert.equal(uploads,uploadsBefore + 1);
     console.log('PASS: edits during upload persist and do not upload the same photo twice');
+
+    let releaseCancelled, cancelledStarted;
+    const cancelledGate = new Promise(resolve => { releaseCancelled = resolve; });
+    const cancelledReady = new Promise(resolve => { cancelledStarted = resolve; });
+    holdUpload = async () => { cancelledStarted(); await cancelledGate; };
+    await card.locator('[data-add-photos]').setInputFiles(fixture('cancel-retry.png'));
+    await cancelledReady;
+    await studio.locator('#cancel-upload').click();
+    await studio.waitForFunction(() => document.querySelector('#save-status').dataset.error === 'true');
+    assert.match(await studio.locator('#save-status').innerText(),/Prijenos je prekinut/);
+    assert.equal(await studio.locator('#save').isDisabled(),false);
+    assert.equal(await studio.locator('#cancel-upload').isVisible(),false);
+    holdUpload = null;
+    releaseCancelled();
+    await save();
+    assert.equal(doc.projects[0].images.length,6);
+    console.log('PASS: cancelled upload keeps pending photos and allows manual retry');
+
 
     await card.locator('[data-field=cat]').selectOption('design');
     assert(await card.locator('.project-photos').isVisible());
@@ -284,8 +305,8 @@ const fixture = name => ({ name, mimeType:'image/png', buffer:png });
       }
       return result;
     });
-    assert.equal(storageErrors[0].status,413);assert.match(storageErrors[0].message,/150 MB/);
-    assert.match(storageErrors[1].message,/video\/quicktime/);
+    assert.equal(storageErrors[0].status,413);assert.match(storageErrors[0].message,/niži limit/);
+    assert.match(storageErrors[1].message,/format datoteke/);
     console.log('PASS: storage size/type rejection is reported with actionable messages');
 
     for (const mimeType of ['video/quicktime','application/octet-stream','']) {
