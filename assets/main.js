@@ -7,7 +7,7 @@
   if (availability && availability.tagName !== 'A') {
     const link = document.createElement('a');
     link.className = availability.className;
-    link.href = 'kontakt.html';
+    link.href = 'kontakt.html?v=brand-3';
     link.append(...availability.childNodes);
     availability.replaceWith(link);
   }
