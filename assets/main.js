@@ -289,7 +289,6 @@
     gallery.append(figure);
   });
   $('.project-count').textContent = `${String($$('.project:not([hidden])').length).padStart(2,'0')} / RADOVA`;
-  $('.demo-note').hidden = !projects.some(p => p.id.startsWith('demo-'));
   if (!projects.length) {
     const empty = document.createElement('p');
     empty.className = 'portfolio-empty';
@@ -327,7 +326,7 @@
     const selectedImage = {...p,image:p.images[photoIndex] || p.image};
     $('.dialog-category').textContent = `${p.year} / ${categories[p.cat]}`;
     $('#lightbox-title').textContent = p.name;
-    $('#lightbox-description').textContent = p.description || p.sub;
+    $('#lightbox-description').textContent = /^(Ogledni vizual za prikaz dizajna portfolija\.|Ogledni video za demonstraciju reprodukcije\.)$/.test(p.description) ? '' : (p.description || p.sub);
     const content = $('#lightbox-content');
     content.innerHTML = p.video
       ? `<div class="dialog-media"><video controls autoplay playsinline aria-label="${esc(p.name)}" src="${esc(p.video)}" ${p.image ? `poster="${esc(imageURL(p,1600))}"` : ''}></video></div><p class="video-status" role="status"></p>`
@@ -576,15 +575,16 @@
     $('#about-link-text').textContent = about.linkText;
     $('.arrow-link',root).hidden = !about.linkText;
     const image = $('.portrait img',root);
-    image.alt = about.imageAlt;
+    image.alt = about.imageAlt === 'Atmosferski pejzaž kao privremeni vizual' ? 'Pejzaž' : about.imageAlt;
     image.hidden = !about.image;
     if (about.image && image.getAttribute('src') !== about.image) {
       image.classList.remove('is-loaded');
       image.src = about.image;
       watchImages($('.portrait',root));
     }
-    $('.portrait small',root).textContent = about.imageCaption;
-    $('.portrait small',root).hidden = !about.imageCaption;
+    const caption = about.imageCaption === 'Mjesto za Leov portret' ? '' : about.imageCaption;
+    $('.portrait small',root).textContent = caption;
+    $('.portrait small',root).hidden = !caption;
     $('.portrait-coordinate',root).textContent = about.coordinate;
   }
   if ($('.covers') || gallery || $('#about-body')) {

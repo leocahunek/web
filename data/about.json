@@ -6,7 +6,7 @@
   "services": ["Fotografija", "Video produkcija", "Montaža", "Grafički dizajn"],
   "linkText": "Upoznajmo tvoju ideju",
   "image": "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1000&auto=format&fit=crop&q=85",
-  "imageAlt": "Atmosferski pejzaž kao privremeni vizual",
-  "imageCaption": "Mjesto za Leov portret",
+  "imageAlt": "Pejzaž",
+  "imageCaption": "",
   "coordinate": "VARAŽDIN / HR"
 }
