@@ -1,0 +1,32 @@
+name: Supabase Activity
+
+on:
+  schedule:
+    - cron: '17 6,12,18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-portfolio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out portfolio repository
+        uses: actions/checkout@v4
+
+      - name: Read published portfolio from Supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="$(jq -r '.url' data/portfolio-config.json)"
+          KEY="$(jq -r '.publishableKey' data/portfolio-config.json)"
+          [[ "$URL" =~ ^https://[a-z0-9-]+\.supabase\.co$ ]] || { echo "Invalid Supabase URL"; exit 1; }
+          [[ -n "$KEY" && "$KEY" != "null" ]] || { echo "Missing public API key"; exit 1; }
+
+          RESPONSE="$(curl --fail --silent --show-error --retry 2 --max-time 30 \
+            --header "apikey: $KEY" \
+            "$URL/rest/v1/portfolio?id=eq.main&select=id")"
+          printf '%s' "$RESPONSE" | jq -e 'length == 1 and .[0].id == "main"' > /dev/null
+          echo "Supabase portfolio is responding."
