@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const base = new URL('../', document.currentScript.src);
-  const categories = ['photo', 'video', 'design', 'travel'];
+  const categories = ['photo', 'video', 'design', 'travel', 'scenes'];
   const arts = ['portrait', 'city', 'design', 'space', 'travel', 'ritual'];
   const photoLimit = 100;
   let config = null;

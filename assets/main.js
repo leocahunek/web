@@ -16,7 +16,7 @@
   let projects = [];
   const portfolio = window.LeoPortfolio;
   const esc = portfolio.escapeHTML;
-  const categories = { photo: 'Fotografija', video: 'Film & montaža', design: 'Grafički dizajn', travel: 'Putopisna fotografija' };
+  const categories = { photo: 'Fotografija', video: 'Film & montaža', design: 'Grafički dizajn', travel: 'Putopisna fotografija', scenes: 'Prizori' };
   const imageURL = portfolio.imageURL;
   const artHTML = p => `<div class="media-art art-${p.art}" aria-hidden="true"><span class="art-grid"></span><span class="art-index">${p.year}</span></div>`;
   const imageHTML = (p, lazy = true) => p.image ? `<img class="media-image" src="${esc(imageURL(p))}" alt="${esc(p.sub)}" ${lazy ? 'loading="lazy"' : 'fetchpriority="high"'}>` : '';

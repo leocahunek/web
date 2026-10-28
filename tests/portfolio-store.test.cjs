@@ -70,3 +70,12 @@ test('request timeout stays active while reading response and explains retry', a
   vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../assets/portfolio-store.js'),'utf8'),isolated);
   await assert.rejects(isolated.window.LeoPortfolio.request('https://example.com',{},20),/Poslužitelj nije odgovorio na vrijeme/);
 });
+
+
+test('Prizori category preserves multi-photo projects and videos', () => {
+  const project = normalize({...legacy,cat:'scenes',images:[legacy.image,'https://example.com/scene.jpg']});
+  assert.equal(project.cat,'scenes');
+  assert.equal(project.images.length,2);
+  assert.equal(normalize(project).cat,'scenes');
+  assert.equal(normalize({...legacy,cat:'scenes',video:'https://example.com/scene.mp4'}).video,'https://example.com/scene.mp4');
+});

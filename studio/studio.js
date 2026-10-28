@@ -92,7 +92,7 @@
     e.target.value = '';
   });
   function renderPhotos(card,project) {
-    $('.project-photos',card).hidden = !['photo','travel','design'].includes(project.cat);
+    $('.project-photos',card).hidden = !['photo','travel','design','scenes'].includes(project.cat);
     $('.photo-count',card).textContent = `(${project.photos.length})`;
     const photos = $('.photo-list',card);
     photos.replaceChildren();
@@ -300,7 +300,7 @@
     }
   }
   function addProjectPhotos(project,files) {
-    if (!session || conflict || !['photo','travel','design'].includes(project.cat)) return;
+    if (!session || conflict || !['photo','travel','design','scenes'].includes(project.cat)) return;
     const errors = [];
     let added = 0;
     for (const file of files) {
@@ -382,7 +382,7 @@
     dropzone.classList.remove('is-over');
     if (e.target.closest('#about-editor')) { attachAboutImage(e.dataTransfer.files[0]); return; }
     const project = projectFor(e.target);
-    if (['photo','travel','design'].includes(project?.cat)) addProjectPhotos(project,e.dataTransfer.files);
+    if (['photo','travel','design','scenes'].includes(project?.cat)) addProjectPhotos(project,e.dataTransfer.files);
     else addFiles(e.dataTransfer.files);
   });
 
