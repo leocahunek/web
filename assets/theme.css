@@ -177,3 +177,7 @@ dialog::backdrop { background: #040206eb; }
 
 .brand-logo { display:block; width:52px; height:52px; object-fit:contain; flex-shrink:0; }
 @media(max-width:600px) { .brand-logo { width:44px; height:44px; } }
+
+/* Give the work gallery more space on both sides. */
+.page-work { padding-inline:clamp(32px,12vw,240px); }
+@media(max-width:600px) { .page-work { padding-inline:8vw; } }
