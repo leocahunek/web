@@ -181,3 +181,5 @@ dialog::backdrop { background: #040206eb; }
 /* Give the work gallery more space on both sides. */
 .page-work { padding-inline:clamp(32px,12vw,240px); }
 @media(max-width:600px) { .page-work { padding-inline:8vw; } }
+
+.page-work .project .project-media { aspect-ratio:5 / 4; }
