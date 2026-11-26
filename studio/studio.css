@@ -6,13 +6,12 @@ body { min-height:100svh; }
 h1 { font-size:clamp(40px,5vw,68px); font-weight:400; line-height:1.05; letter-spacing:-.04em; margin:20px 0 25px; }
 .login-copy,.workspace-help,.small-note { color:var(--muted); line-height:1.8; font-size:13px; }
 .small-note { margin-top:25px; font-size:11px; }
-#login-form,#github-login-form { padding:20px 0 0; }
+#login-form { padding:20px 0 0; }
 .primary-button,.quiet-button { display:inline-flex; align-items:center; justify-content:space-between; gap:24px; border:1px solid #ffffff60; padding:13px 20px; border-radius:5px; background:#24172f; color:white; font-size:12px; }
 .quiet-button { background:transparent; }
 .primary-button:hover,.quiet-button:hover { background:#332340; }
 .primary-button:disabled { opacity:.4; cursor:default; }
-#login-button,#github-login-button { width:100%; }
-#github-login-form a { text-decoration:underline; }
+#login-button { width:100%; }
 #login-status { font-size:12px; color:#ffb7c5; line-height:1.7; }
 .notice { padding:18px 20px; margin:20px 0; border:1px solid #ffffff35; border-radius:8px; font-size:12px; line-height:1.8; background:#140d1c; }
 .notice p { margin:0 0 12px; }

@@ -4,10 +4,6 @@
   const portfolio = window.LeoPortfolio;
   let config;
   let session = null;
-  let githubStorage = null;
-  let githubUpload = null;
-  let githubLogin = false;
-  let githubPublished = false;
   let projects = [];
   let about = null;
   let aboutSupported = false;
@@ -37,14 +33,11 @@
   }
   function scheduleSave() {
     clearTimeout(timer);
-    if (!conflict && !saving && dirty() && (!githubStorage || revision !== null)) timer = setTimeout(save,githubStorage ? 5000 : 900);
+    if (!conflict && !saving && dirty()) timer = setTimeout(save,900);
   }
   function changed() {
     changes++;
-    let message = 'Promjene čekaju spremanje.';
-    if (saving) message = `${uploadMessage || 'Spremanje je u tijeku.'} Dodatne izmjene spremit će se zatim.`;
-    else if (githubStorage && revision === null) message = 'Kad su radovi spremni, klikni „Spremi odmah”.';
-    status(message);
+    status(saving ? `${uploadMessage || 'Spremanje je u tijeku.'} Dodatne izmjene spremit će se zatim.` : 'Promjene čekaju spremanje.');
     scheduleSave();
   }
   function releasePreviews() {
@@ -280,9 +273,6 @@
 
   function validateFile(file) {
     if (!types.has(file.type)) throw new Error(`Datoteka „${file.name}” nema podržan format.`);
-    if (githubStorage && file.type.startsWith('video/') && file.size > window.LeoGithubStorage.videoLimit) {
-      throw new Error(`Za GitHub izvezi video „${file.name}” do 25 MB.`);
-    }
     if (file.size > 150 * 1024 * 1024) throw new Error(`Datoteka „${file.name}” je veća od 150 MB.`);
     if (!file.size) throw new Error(`Datoteka „${file.name}” je prazna.`);
   }
@@ -480,10 +470,6 @@
     const blob = field === 'image' ? await prepareImage(file) : file;
     const extension = {'image/webp':'webp','image/png':'png','image/jpeg':'jpg','image/gif':'gif','video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov'}[blob.type];
     if (!extension) throw new Error('Datoteku nije moguće pripremiti za objavu.');
-    if (githubStorage) {
-      if (field === 'image' && blob.size > 3 * 1024 * 1024) throw new Error(`Fotografija „${file.name}” nakon obrade prelazi 3 MB. Dodaj manju kopiju.`);
-      return githubStorage.stage(blob,extension);
-    }
     const auth = await headers();
     const path = `${session.user.id}/${project.id}/${crypto.randomUUID()}.${extension}`;
     await new Promise((resolve,reject) => {
@@ -531,10 +517,6 @@
   async function save() {
     clearTimeout(timer);
     if (!session || saving || conflict || !dirty()) return;
-    if (githubStorage && revision === null && !projects.length) {
-      status('Dodaj barem jedan rad prije prve objave preko GitHuba.',true);
-      return;
-    }
     saving = true;
     status('Spremam izmjene…');
     const version = changes;
@@ -550,11 +532,9 @@
         if (about.pendingImage === aboutSnapshot.pendingImage) {
           about.image = aboutSnapshot.image;
           about.pendingImage = null;
-          if (!githubStorage) {
-            revoke(about.preview);
-            about.preview = null;
-            updateAboutPreview();
-          }
+          revoke(about.preview);
+          about.preview = null;
+          updateAboutPreview();
         }
       }
       for (const project of snapshot) {
@@ -577,7 +557,6 @@
           if (livePhoto && livePhoto.pending === photo.pending) {
             livePhoto.url = photo.url;
             livePhoto.pending = null;
-            if (githubStorage) continue;
             revoke(livePhoto.preview);
             livePhoto.preview = null;
             const card = list.querySelector(`[data-id="${live.id}"]`);
@@ -606,31 +585,18 @@
       }
       if (version !== changes) {
         successful = true;
-        status(githubStorage && revision === null ? 'Klikni „Spremi odmah” za prvu objavu.' : 'Spremam preostale promjene…');
+        status('Spremam preostale promjene…');
         return;
       }
+      status('Spremam izmjene u bazu…');
       const normalized = portfolio.normalizeProjects(snapshot);
       const payload = {projects:normalized};
       if (aboutSupported) payload.about = portfolio.normalizeAbout(aboutSnapshot);
-      if (githubStorage) {
-        githubUpload = new AbortController();
-        $('#cancel-upload').hidden = false;
-        const result = await githubStorage.save(payload,revision,message => {
-          $('#cancel-upload').hidden = !message.startsWith('Prenosim');
-          status(message);
-        },githubUpload.signal);
-        if (result === null) { showConflict(); return; }
-        revision = result;
-        githubPublished = true;
-        githubNotice();
-      } else {
-        status('Spremam izmjene u bazu…');
-        const rows = await portfolio.request(`${config.url}/rest/v1/portfolio?id=eq.main&revision=eq.${revision}&select=revision`, {
-          method:'PATCH',headers:{...await headers(),'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(payload)
-        });
-        if (!Array.isArray(rows) || rows.length !== 1) { showConflict(); return; }
-        revision = rows[0].revision;
-      }
+      const rows = await portfolio.request(`${config.url}/rest/v1/portfolio?id=eq.main&revision=eq.${revision}&select=revision`, {
+        method:'PATCH',headers:{...await headers(),'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(payload)
+      });
+      if (!Array.isArray(rows) || rows.length !== 1) { showConflict(); return; }
+      revision = rows[0].revision;
       savedChanges = version;
       successful = true;
       if ('BroadcastChannel' in window) {
@@ -638,23 +604,20 @@
         channel.postMessage({type:'updated'});
         channel.close();
       }
-      status(dirty() ? 'Spremam preostale promjene…' : githubStorage ? 'Spremljeno na GitHub. Web se osvježava nakon objave.' : 'Sve promjene spremljene i objavljene.');
-    } catch (error) {
-      status(githubUpload?.signal.aborted ? 'Prijenos je prekinut. Pokušaj ponovno gumbom „Spremi odmah”.' : error.message || 'Spremanje nije uspjelo. Pokušaj ponovno.',true);
-    } finally {
-      githubUpload = null;
-      $('#cancel-upload').hidden = true;
+      status(dirty() ? 'Spremam preostale promjene…' : 'Sve promjene spremljene i objavljene.');
+    } catch (error) { status(error.message || 'Spremanje nije uspjelo. Pokušaj ponovno.',true); }
+    finally {
       saving = false;
       $('#save').disabled = conflict || !dirty();
       if (successful && dirty()) scheduleSave();
     }
   }
-  $('#cancel-upload').addEventListener('click',() => { activeUpload?.abort(); githubUpload?.abort(); });
+  $('#cancel-upload').addEventListener('click',() => { activeUpload?.abort(); });
   $('#save').addEventListener('click',save);
   $('#reload').addEventListener('click',async () => {
     if (saving || (dirty() && !confirm('Odbaciti nespremljene izmjene i učitati aktualne radove?'))) return;
     try {
-      const doc = await (githubStorage ? githubStorage.read() : portfolio.readSupabase());
+      const doc = await portfolio.readRemote();
       releasePreviews();
       projects = editableProjects(doc.projects);
       renderAbout(doc);
@@ -668,61 +631,22 @@
       $('#add-video').disabled = false;
       dropzone.removeAttribute('aria-disabled');
       render();
-      githubNotice();
       status('Učitana je aktualna verzija radova.');
     } catch (error) { status(error.message,true); }
   });
-  function githubNotice() {
-    const notice = $('#github-notice');
-    notice.hidden = !githubStorage;
-    notice.textContent = revision === null
-      ? 'Prva objava preko GitHuba zamijenit će javni popis radova sadržajem iz ove kartice. Provjeri stare radove i ponovno dodaj fotografije kojima više nemaš pristup prije klika na „Spremi odmah”.'
-      : 'Radovi se spremaju preko GitHuba. Promjene su vidljive na javnom webu nakon što GitHub Pages objavi novu verziju.';
-    $('#upload-limit').textContent = githubStorage ? 'fotografije se automatski pripremaju za web' : 'do 150 MB po datoteci';
-    $('#video-limit').textContent = githubStorage ? 'do 25 MB' : 'do 150 MB';
-  }
-  function showLogin(useGitHub) {
-    githubLogin = useGitHub;
-    $('#login-form').hidden = !config || useGitHub;
-    $('#github-login-form').hidden = !useGitHub;
-    $('#switch-login').hidden = !config || !portfolio.githubEnabled() || githubPublished;
-    $('#switch-login').textContent = useGitHub ? 'Prijava preko Supabasea' : 'Prijava preko GitHuba';
-    $('#setup-notice').textContent = config || useGitHub ? 'Prijavi se vlasničkim računom.' : 'Prijavu treba aktivirati povezivanjem spremišta.';
-  }
-  $('#switch-login').addEventListener('click',() => {
-    $('#login-status').textContent = '';
-    showLogin(!githubLogin);
-  });
-  async function login(e) {
+  $('#login-form').addEventListener('submit',async e => {
     e.preventDefault();
-    const loginForm = e.currentTarget;
-    const useGitHub = loginForm.id === 'github-login-form';
-    const loginButton = loginForm.querySelector('button[type=submit]');
-    loginButton.disabled = true;
-    $('#switch-login').disabled = true;
+    $('#login-button').disabled = true;
     $('#login-status').textContent = 'Prijavljujem se…';
     try {
-      const form = new FormData(loginForm);
-      let doc;
-      if (useGitHub) {
-        githubStorage = window.LeoGithubStorage.open(form.get('token').trim());
-        doc = await githubStorage.authorize();
-        githubPublished = doc.revision !== null;
-        session = {github:true};
-      } else {
-        if (await portfolio.readGithub().catch(() => null)) {
-          githubPublished = true;
-          showLogin(true);
-          throw new Error('Portfolio se uređuje preko GitHuba.');
-        }
-        const result = await portfolio.request(`${config.url}/auth/v1/token?grant_type=password`, {
-          method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({email:form.get('email'),password:form.get('password')})
-        });
-        session = {...result,expiresAt:Date.now() + result.expires_in * 1000};
-        const owner = await portfolio.request(`${config.url}/rest/v1/rpc/is_portfolio_owner`, {method:'POST',headers:{...await headers(),'Content-Type':'application/json'},body:'{}'});
-        if (owner !== true) throw new Error('Ovaj račun nema pristup studiju.');
-        doc = await portfolio.readSupabase();
-      }
+      const form = new FormData(e.target);
+      const result = await portfolio.request(`${config.url}/auth/v1/token?grant_type=password`, {
+        method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({email:form.get('email'),password:form.get('password')})
+      });
+      session = {...result,expiresAt:Date.now() + result.expires_in * 1000};
+      const owner = await portfolio.request(`${config.url}/rest/v1/rpc/is_portfolio_owner`, {method:'POST',headers:{...await headers(),'Content-Type':'application/json'},body:'{}'});
+      if (owner !== true) throw new Error('Ovaj račun nema pristup studiju.');
+      const doc = await portfolio.readRemote();
       projects = editableProjects(doc.projects);
       renderAbout(doc);
       revision = doc.revision;
@@ -734,17 +658,15 @@
       $('#video-files').disabled = false;
       $('#add-video').disabled = false;
       dropzone.removeAttribute('aria-disabled');
-      loginForm.reset();
+      e.target.reset();
       $('#login-view').hidden = true;
       $('#workspace').hidden = false;
       $('#logout').hidden = false;
-      githubNotice();
-      status(revision === null ? 'Pripremi radove za prvu objavu.' : 'Sve promjene spremljene.');
+      status('Sve promjene spremljene.');
       render();
       stopWatching();
-      if (useGitHub) return;
       stopWatching = portfolio.subscribe(doc => {
-        if (!session || saving || doc.provider === 'github' || doc.revision === revision) return;
+        if (!session || saving || doc.revision === revision) return;
         if (dirty()) { showConflict(); return; }
         releasePreviews();
         projects = editableProjects(doc.projects);
@@ -755,27 +677,15 @@
       });
     } catch (error) {
       session = null;
-      githubStorage = null;
-      if (!useGitHub && error.status === 402 && portfolio.githubEnabled()) {
-        showLogin(true);
-        $('#login-status').textContent = 'Supabase je blokiran zbog kvote. U Studio možeš ući preko GitHuba.';
-      } else {
-        $('#login-status').textContent = !useGitHub && error.status === 400 ? 'Provjeri e-mail i lozinku.' : error.message;
-      }
-    } finally {
-      loginButton.disabled = false;
-      $('#switch-login').disabled = false;
-    }
-  }
-  $('#login-form').addEventListener('submit',login);
-  $('#github-login-form').addEventListener('submit',login);
+      $('#login-status').textContent = error.status === 400 ? 'Provjeri e-mail i lozinku.' : error.message;
+    } finally { $('#login-button').disabled = false; }
+  });
   $('#logout').addEventListener('click',async () => {
     if (saving || (dirty() && !confirm('Odjaviti se i odbaciti nespremljene izmjene?'))) return;
     clearTimeout(timer);
     stopWatching();
-    try { if (!githubStorage) await portfolio.request(`${config.url}/auth/v1/logout?scope=local`, {method:'POST',headers:await headers()},5000); } catch { /* Always clear this tab's session. */ }
+    try { await portfolio.request(`${config.url}/auth/v1/logout?scope=local`, {method:'POST',headers:await headers()},5000); } catch { /* Always clear this tab's session. */ }
     session = null;
-    githubStorage = null;
     releasePreviews();
     projects = [];
     list.replaceChildren();
@@ -784,18 +694,12 @@
     $('#logout').hidden = true;
     $('#login-view').hidden = false;
     $('#login-status').textContent = 'Odjavljen si.';
-    showLogin(githubLogin);
-    $(githubLogin ? '#github-login-form input' : '#login-form input').focus();
+    $('#login-form input').focus();
   });
   addEventListener('beforeunload',e => { if (dirty() || saving) { e.preventDefault(); e.returnValue = ''; } });
-  portfolio.load({waitForRemote:false}).then(() => {
+  portfolio.load().then(() => {
     config = portfolio.getConfig();
-    showLogin(portfolio.githubEnabled());
-    portfolio.readGithub().then(doc => {
-      if (doc) {
-        githubPublished = true;
-        $('#switch-login').hidden = true;
-      }
-    }).catch(() => {});
+    $('#setup-notice').textContent = config ? 'Prijavi se vlasničkim računom.' : 'Studio je pripremljen. Prijavu i objavu radova treba aktivirati povezivanjem Supabase projekta.';
+    $('#login-form').hidden = !config;
   }).catch(() => { $('#setup-notice').textContent = 'Vezu sa spremištem nije moguće provjeriti. Pokušaj osvježiti stranicu.'; });
 })();

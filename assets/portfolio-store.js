@@ -4,9 +4,7 @@
   const categories = ['photo', 'video', 'design', 'travel', 'scenes'];
   const arts = ['portrait', 'city', 'design', 'space', 'travel', 'ritual'];
   const photoLimit = 100;
-  const github = Object.freeze({repository:'leocahunek/web',branch:'main',manifest:'data/portfolio-published.json',mediaDirectory:'media/portfolio/',videoLimit:25 * 1024 * 1024});
   let config = null;
-  let githubEnabled = false;
   let current = null;
   let loading = null;
   let aboutDefaults = {};
@@ -92,38 +90,17 @@
       throw error;
     } finally { clearTimeout(timer); }
   }
-  function readSupabaseCache() {
+  function readCache() {
     try {
       const saved = JSON.parse(localStorage.getItem('leo-portfolio-cache'));
-      if (config && saved?.source === config.url) return { projects:normalizeProjects(saved.projects), about:normalizeAbout(saved.about), aboutSupported:saved.aboutSupported === true, revision:saved.revision, remote:true };
+      if (saved?.source === config.url) return { projects:normalizeProjects(saved.projects), about:normalizeAbout(saved.about), aboutSupported:saved.aboutSupported === true, revision:saved.revision, remote:true };
     } catch { /* Cached public content is optional. */ }
     return null;
   }
   function saveCache(doc) {
-    if (doc.provider === 'github') {
-      try { localStorage.setItem('leo-portfolio-published',JSON.stringify(doc)); } catch { /* Cached public content is optional. */ }
-    } else {
-      try { localStorage.setItem('leo-portfolio-cache',JSON.stringify({source:config.url,...doc})); } catch { /* Cached public content is optional. */ }
-    }
-  }
-  function readPublishedCache() {
-    if (!githubEnabled) return null;
-    try { return normalizePublished(JSON.parse(localStorage.getItem('leo-portfolio-published'))); }
-    catch { return null; }
-  }
-  function normalizePublished(value) {
-    if (!Number.isSafeInteger(value?.revision) || value.revision < 1) throw new Error('Neispravan objavljeni popis radova.');
-    return {projects:normalizeProjects(value.projects),about:normalizeAbout(value.about),aboutSupported:true,revision:value.revision,remote:true,provider:'github'};
-  }
-  async function readGithub() {
-    if (!githubEnabled) return null;
-    try { return normalizePublished(await request(new URL(github.manifest,base),{},5000)); }
-    catch (error) { if (error.status !== 404) throw error; return null; }
+    try { localStorage.setItem('leo-portfolio-cache', JSON.stringify({source:config.url, ...doc})); } catch { /* Storage can be disabled. */ }
   }
   async function readRemote() {
-    return await readGithub() || readSupabase();
-  }
-  async function readSupabase() {
     if (!config) return null;
     let rows;
     try {
@@ -144,16 +121,12 @@
         request(new URL('data/about.json',base))
       ]);
       config = validateConfig(settings);
-      githubEnabled = settings?.github === true;
       aboutDefaults = normalizeAbout(about);
       current = {projects:normalizeProjects(manifest.projects), about:aboutDefaults, aboutSupported:false, revision:0, remote:false};
-      if (config || githubEnabled) {
-        current = readPublishedCache() || readSupabaseCache() || current;
+      if (config) {
+        current = readCache() || current;
         if (waitForRemote) {
-          try {
-            const remote = await readRemote();
-            if (remote) { current = remote; saveCache(remote); }
-          } catch { /* Keep the last published content available offline. */ }
+          try { current = await readRemote(); saveCache(current); } catch { /* Keep the last published content available offline. */ }
         }
       }
       return current;
@@ -161,7 +134,7 @@
     return loading;
   }
   function subscribe(callback,{refreshImmediately = false} = {}) {
-    if (!config && !githubEnabled) return () => {};
+    if (!config) return () => {};
     let busy = false;
     let stopped = false;
     const refresh = async () => {
@@ -169,7 +142,7 @@
       busy = true;
       try {
         const next = await readRemote();
-        if (next && !stopped && (!current?.remote || next.provider !== current.provider || next.revision !== current.revision)) {
+        if (!stopped && (!current?.remote || next.revision !== current.revision)) {
           current = next;
           saveCache(next);
           callback(next);
@@ -177,7 +150,7 @@
       } catch { /* Retry when the connection returns. */ }
       finally { busy = false; }
     };
-    const interval = setInterval(refresh,githubEnabled ? 30000 : 5000);
+    const interval = setInterval(refresh,5000);
     document.addEventListener('visibilitychange',refresh);
     const channel = 'BroadcastChannel' in window ? new BroadcastChannel('leo-portfolio') : null;
     if (channel) channel.onmessage = refresh;
@@ -193,5 +166,5 @@
     }
     return url.href;
   }
-  window.LeoPortfolio = Object.freeze({ load, subscribe, normalizeProjects, normalizeAbout, mediaURL, imageURL, escapeHTML, request, requestError, photoLimit, getConfig:() => config, githubEnabled:() => githubEnabled, github, normalizePublished, readRemote, readGithub, readSupabase, readSupabaseCache });
+  window.LeoPortfolio = Object.freeze({ load, subscribe, normalizeProjects, normalizeAbout, mediaURL, imageURL, escapeHTML, request, requestError, photoLimit, getConfig:() => config, readRemote });
 })();
