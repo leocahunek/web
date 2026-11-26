@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://use.typekit.net https://p.typekit.net; font-src 'self' https://use.typekit.net; img-src 'self' https: blob: data:; media-src 'self' https: blob:; connect-src 'self' https://api.github.com https://*.supabase.co; base-uri 'none'; form-action 'none'">
   <meta name="theme-color" content="#09050d">
   <title>Studio — Leo Cahunek</title>
   <link rel="icon" href="../assets/camera-cursor.svg" type="image/svg+xml">
@@ -12,9 +13,10 @@
   <link rel="stylesheet" href="https://use.typekit.net/job4tqi.css">
   <link rel="stylesheet" href="../assets/style.css?v=aquavit-1">
   <link rel="stylesheet" href="../assets/theme.css?v=brand-3">
-  <link rel="stylesheet" href="studio.css?v=upload-progress-1">
-  <script src="../assets/portfolio-store.js?v=scenes-1" defer></script>
-  <script src="studio.js?v=scenes-1" defer></script>
+  <link rel="stylesheet" href="studio.css?v=github-1">
+  <script src="../assets/portfolio-store.js?v=github-1" defer></script>
+  <script src="github-storage.js?v=github-1" defer></script>
+  <script src="studio.js?v=github-1" defer></script>
 </head>
 <body data-page="admin">
   <header class="studio-header">
@@ -32,13 +34,20 @@
         <label>Lozinka<input type="password" name="password" autocomplete="current-password" required></label>
         <button id="login-button" type="submit" class="primary-button">Uđi u studio <span aria-hidden="true">↗</span></button>
       </form>
+      <form id="github-login-form" hidden>
+        <label>GitHub token<input type="password" name="token" autocomplete="off" required maxlength="255"></label>
+        <button id="github-login-button" type="submit" class="primary-button">Uđi preko GitHuba</button>
+        <p class="small-note">U GitHubu izradi <a href="https://github.com/settings/personal-access-tokens/new?name=Portfolio%20Studio&amp;description=Objava%20radova%20iz%20Studija&amp;contents=write" target="_blank" rel="noopener noreferrer">fine-grained token</a> za samo <strong>leocahunek/web</strong> s ovlasti <strong>Contents: Read and write</strong>. Token vrijedi u ovoj kartici do odjave ili osvježavanja.</p>
+      </form>
+      <button id="switch-login" type="button" class="quiet-button" hidden>Prijava preko GitHuba</button>
       <p id="login-status" role="status" aria-live="polite"></p>
-      <p class="small-note">Upravljanje je dostupno samo vlasničkom računu. Adresa studija nije povezana u javnoj navigaciji.</p>
+      <p class="small-note">Upravljanje je dostupno vlasniku portfolija.</p>
     </section>
 
     <section id="workspace" class="workspace" aria-labelledby="workspace-title" hidden>
       <div class="workspace-heading"><div><div class="eyebrow muted">Portfolio / uređivanje</div><h1 id="workspace-title">Tvoj web.</h1></div><div class="save-controls"><span id="save-status" role="status" aria-live="polite">Sve promjene spremljene.</span><button id="cancel-upload" type="button" class="quiet-button" hidden>Prekini prijenos</button><button id="save" type="button" class="primary-button" disabled>Spremi odmah ↗</button></div></div>
       <div id="conflict" class="notice" hidden><p>Sadržaj je promijenjen u drugom prozoru. Učitaj aktualnu verziju prije novih izmjena.</p><button id="reload" class="quiet-button" type="button">Učitaj aktualnu verziju</button></div>
+      <p id="github-notice" class="notice" hidden></p>
       <nav class="studio-section-links" aria-label="Uređivanje weba"><a href="#about-settings">O meni — tekst i fotografija</a><a href="#project-list">Radovi</a></nav>
       <details id="about-settings" class="about-editor-panel" open>
         <summary>O meni — tekst i fotografija</summary>
@@ -54,10 +63,10 @@
       </details>
       <h2 class="projects-heading">Radovi</h2>
       <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Dodaj fotografije ili videozapise">
-        <span class="drop-icon" aria-hidden="true">＋</span><strong>Povuci radove ovdje.</strong><span>Ili klikni i odaberi datoteke.</span><small>JPG, PNG, WebP, AVIF, GIF, MP4, WebM i MOV · do 150 MB po datoteci</small>
+        <span class="drop-icon" aria-hidden="true">＋</span><strong>Povuci radove ovdje.</strong><span>Ili klikni i odaberi datoteke.</span><small>JPG, PNG, WebP, AVIF, GIF, MP4, WebM i MOV · <span id="upload-limit">do 150 MB po datoteci</span></small>
       </div>
       <input id="files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" hidden>
-      <div class="video-upload-action"><button id="add-video" class="primary-button" type="button">Dodaj video</button><input id="video-files" type="file" multiple accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" hidden><span>MP4, WebM ili MOV · do 150 MB</span></div>
+      <div class="video-upload-action"><button id="add-video" class="primary-button" type="button">Dodaj video</button><input id="video-files" type="file" multiple accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" hidden><span>MP4, WebM ili MOV · <span id="video-limit">do 150 MB</span></span></div>
       <p class="workspace-help">Ovdje dodaješ nove projekte. Više fotografija istog projekta dodaj unutar njegove kartice gumbom „Dodaj fotografije” ili ih povuci na karticu. Povuci kartice za promjenu redoslijeda ili koristi strelice. Odaberi do pet radova za naslovnu. Promjene se spremaju automatski i pojavljuju na javnom webu.</p>
       <p id="upload-status" class="upload-status" role="status" aria-live="polite"></p>
       <div id="project-list" class="project-list" aria-label="Radovi za uređivanje"></div>
